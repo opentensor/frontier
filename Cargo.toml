@@ -205,10 +205,6 @@ precompile-utils = { path = "precompiles", default-features = false }
 # Frontier Template
 frontier-template-runtime = { path = "template/runtime", default-features = false }
 
-# hotfix for https://github.com/paritytech/polkadot-sdk/issues/7653
-[patch.'https://github.com/w3f/fflonk']
-fflonk = { git = "https://www.github.com/w3f/fflonk", rev = "be95d4" }
-
 [profile.release]
 # Substrate runtime requires unwinding.
 panic = "unwind"
