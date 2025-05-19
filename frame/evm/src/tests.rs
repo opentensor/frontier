@@ -651,6 +651,9 @@ mod storage_growth_test {
 		contract: &str,
 		gas_limit: u64,
 	) -> Result<CreateInfo, crate::RunnerError<crate::Error<Test>>> {
+		let whitelist = Vec::new();
+		let whitelist_disabled = true ;
+
 		<Test as Config>::Runner::create(
 			H160::default(),
 			hex::decode(contract.trim_end()).expect("Failed to decode contract"),
@@ -660,6 +663,8 @@ mod storage_growth_test {
 			None,
 			None,
 			Vec::new(),
+			whitelist,
+			whitelist_disabled,
 			true, // transactional
 			true, // must be validated
 			Some(FixedGasWeightMapping::<Test>::gas_to_weight(
