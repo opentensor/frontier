@@ -34,7 +34,9 @@ use sp_runtime::{
 };
 // Frontier
 use fp_evm::{ExitReason, ExitRevert, PrecompileFailure, PrecompileHandle};
-use pallet_evm::{BalanceConverter, EnsureAddressNever, EnsureAddressRoot, EvmBalance, SubstrateBalance};
+use pallet_evm::{
+	BalanceConverter, EnsureAddressNever, EnsureAddressRoot, EvmBalance, SubstrateBalance,
+};
 use precompile_utils::{
 	precompile_set::*,
 	solidity::{codec::Writer, revert::revert},

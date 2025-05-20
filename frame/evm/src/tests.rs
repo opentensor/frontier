@@ -652,7 +652,7 @@ mod storage_growth_test {
 		gas_limit: u64,
 	) -> Result<CreateInfo, crate::RunnerError<crate::Error<Test>>> {
 		let whitelist = Vec::new();
-		let whitelist_disabled = true ;
+		let whitelist_disabled = true;
 
 		<Test as Config>::Runner::create(
 			H160::default(),
@@ -974,8 +974,8 @@ fn ed_0_refund_patch_works() {
 		let evm_addr = H160::from_str("1000000000000000000000000000000000000003").unwrap();
 		let substrate_addr = <Test as Config>::AddressMapping::into_account_id(evm_addr);
 
-		let _ = <Test as Config>::Currency::deposit_creating(&substrate_addr, 21_777_000_000_000);
-		assert_eq!(Balances::free_balance(&substrate_addr), 21_777_000_000_000);
+		let _ = <Test as Config>::Currency::deposit_creating(&substrate_addr, 21_777);
+		assert_eq!(Balances::free_balance(&substrate_addr), 21_777);
 
 		let _ = EVM::call(
 			RuntimeOrigin::root(),
@@ -990,7 +990,7 @@ fn ed_0_refund_patch_works() {
 			Vec::new(),
 		);
 		// All that was due, was refunded.
-		assert_eq!(Balances::free_balance(&substrate_addr), 776_000_000_000);
+		assert_eq!(Balances::free_balance(&substrate_addr), 776);
 	});
 }
 
@@ -1009,7 +1009,7 @@ fn ed_0_refund_patch_is_required() {
 		let _ =
 			<<Test as Config>::OnChargeTransaction as OnChargeEVMTransaction<Test>>::withdraw_fee(
 				&evm_addr,
-				EvmBalance::from(100u64),
+				EvmBalance::from(100e9 as u128),
 			)
 			.unwrap();
 		assert_eq!(Balances::free_balance(&substrate_addr), 0);
@@ -1055,7 +1055,10 @@ fn reducible_balance() {
 		Balances::set_lock(lock_id, &account_id, to_lock, WithdrawReasons::RESERVE);
 		// Reducible is, as currently configured in `account_basic`, (balance - lock - existential).
 		let reducible_balance = EVM::account_basic(&evm_addr).0.balance;
-		assert_eq!(reducible_balance, (genesis_balance - to_lock - existential));
+		assert_eq!(
+			reducible_balance,
+			(genesis_balance - (to_lock + existential) * 1e9 as u64)
+		);
 	});
 }
 
@@ -1072,13 +1075,18 @@ fn author_should_get_tip() {
 			U256::from(1),
 			1000000,
 			U256::from(2_000_000_000),
-			Some(U256::from(1)),
+			// We set a tip high enough so the tip is non-zero in Substrate units.
+			Some(U256::from(1e9 as u128)),
 			None,
 			Vec::new(),
 		);
 		result.expect("EVM can be called");
 		let after_tip = EVM::account_basic(&author).0.balance;
-		assert_eq!(after_tip, (before_tip + 21000));
+		assert_eq!(
+			after_tip,
+			// We convert the tip to EVM units.
+			before_tip + (21000 * 1e9 as u128)
+		);
 	});
 }
 
@@ -1104,7 +1112,11 @@ fn issuance_after_tip() {
 		let base_fee: u64 = <Test as Config>::FeeCalculator::min_gas_price()
 			.0
 			.unique_saturated_into();
-		assert_eq!(after_tip, (before_tip - (base_fee * 21_000)));
+		let fee_evm = EvmBalance::from(base_fee * 21_000);
+		let fee_sub = <Test as Config>::BalanceConverter::into_substrate_balance(fee_evm)
+			.unwrap()
+			.into_u64_saturating();
+		assert_eq!(after_tip, before_tip - fee_sub);
 	});
 }
 
@@ -1143,7 +1155,7 @@ fn refunds_should_work() {
 			H160::default(),
 			H160::from_str("1000000000000000000000000000000000000001").unwrap(),
 			Vec::new(),
-			U256::from(1),
+			U256::from(1e9 as u128),
 			1000000,
 			U256::from(2_000_000_000),
 			None,
@@ -1151,7 +1163,7 @@ fn refunds_should_work() {
 			Vec::new(),
 		);
 		let (base_fee, _) = <Test as Config>::FeeCalculator::min_gas_price();
-		let total_cost = (U256::from(21_000) * base_fee) + U256::from(1);
+		let total_cost = (U256::from(21_000) * base_fee) + U256::from(1e9 as u128);
 		let after_call = EVM::account_basic(&H160::default()).0.balance;
 		assert_eq!(after_call, before_call - total_cost);
 	});
@@ -1175,7 +1187,7 @@ fn refunds_and_priority_should_work() {
 			H160::default(),
 			H160::from_str("1000000000000000000000000000000000000001").unwrap(),
 			Vec::new(),
-			U256::from(1),
+			U256::from(1e9 as u128),
 			1000000,
 			max_fee_per_gas,
 			Some(tip),
@@ -1184,7 +1196,7 @@ fn refunds_and_priority_should_work() {
 		);
 		let (base_fee, _) = <Test as Config>::FeeCalculator::min_gas_price();
 		let actual_tip = (max_fee_per_gas - base_fee).min(tip) * used_gas;
-		let total_cost = (used_gas * base_fee) + actual_tip + U256::from(1);
+		let total_cost = (used_gas * base_fee) + actual_tip + U256::from(1e9 as u128);
 		let after_call = EVM::account_basic(&H160::default()).0.balance;
 		// The tip is deducted but never refunded to the caller.
 		assert_eq!(after_call, before_call - total_cost);

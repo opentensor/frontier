@@ -29,7 +29,8 @@ use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 
 use fp_evm::{ExitError, ExitReason, Transfer};
 use pallet_evm::{
-	BalanceConverter, Context, EnsureAddressNever, EnsureAddressRoot, EvmBalance, FeeCalculator, IdentityAddressMapping, PrecompileHandle, SubstrateBalance
+	BalanceConverter, Context, EnsureAddressNever, EnsureAddressRoot, EvmBalance, FeeCalculator,
+	IdentityAddressMapping, PrecompileHandle, SubstrateBalance,
 };
 
 frame_support::construct_runtime! {
