@@ -15,7 +15,7 @@ import {
 	ETH_BLOCK_POV_LIMIT,
 	TEST_ERC20_BYTECODE,
 } from "./config";
-import { describeWithFrontier, createAndFinalizeBlock, customRequest } from "./util";
+import { describeWithFrontier, createAndFinalizeBlock, customRequest, ensureWhitelistCheckDisabled } from "./util";
 
 const TEST_ACCOUNT = "0x1111111111111111111111111111111111111111";
 
@@ -54,6 +54,8 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 	// to spin up a frontier node, it saves a lot of time.
 
 	it("eth_estimateGas for contract creation", async function () {
+		await ensureWhitelistCheckDisabled(context.api, context.web3);
+
 		// The value returned as an estimation by the evm with estimate mode ON.
 		let oneOffEstimation = 189139;
 		let binarySearchEstimation = binarySearch(oneOffEstimation);
@@ -119,6 +121,8 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 	});
 
 	it("eth_estimateGas 0x0 gasPrice is equivalent to not setting one", async function () {
+		await ensureWhitelistCheckDisabled(context.api, context.web3);
+
 		let result = await context.web3.eth.estimateGas({
 			from: GENESIS_ACCOUNT,
 			data: Test.bytecode,
@@ -133,6 +137,8 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 	});
 
 	it("eth_estimateGas should ignore nonce", async function () {
+		await ensureWhitelistCheckDisabled(context.api, context.web3);
+
 		let result = await context.web3.eth.estimateGas({
 			from: GENESIS_ACCOUNT,
 			data: Test.bytecode,
