@@ -5,7 +5,7 @@ import { AbiItem } from "web3-utils";
 
 import StateOverrideTest from "../build/contracts/StateOverrideTest.json";
 import Test from "../build/contracts/Test.json";
-import { GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY } from "./config";
+import { GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY, EVM_DECIMAL_FACTORS } from "./config";
 import { createAndFinalizeBlock, customRequest, describeWithFrontier } from "./util";
 
 chaiUse(chaiAsPromised);
@@ -82,7 +82,7 @@ describeWithFrontier("Frontier RPC (StateOverride)", (context) => {
 				},
 			},
 		]);
-		expect(Web3.utils.hexToNumberString(result)).to.equal("5000");
+		expect(Web3.utils.hexToNumberString(result)).to.equal((5000 * EVM_DECIMAL_FACTORS).toString());
 	});
 
 	it("should have availableFunds of 100 without state override", async function () {

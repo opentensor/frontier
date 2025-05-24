@@ -2,7 +2,7 @@ import { assert, expect } from "chai";
 import { step } from "mocha-steps";
 import { ETH_BLOCK_GAS_LIMIT, GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY } from "./config";
 
-import { describeWithFrontier, customRequest, createAndFinalizeBlock } from "./util";
+import { describeWithFrontier, customRequest, createAndFinalizeBlock, ensureWhitelistCheckDisabled } from "./util";
 import { AbiItem } from "web3-utils";
 
 import Test from "../build/contracts/Test.json";
@@ -112,6 +112,8 @@ describeWithFrontier("Frontier RPC (estimate gas historically)", (context) => {
 
 describeWithFrontier("Frontier RPC (RPC execution)", (context) => {
 	step("should call with gas limit under block gas limit", async function () {
+		await ensureWhitelistCheckDisabled(context.api, context.web3);
+
 		const result = await customRequest(context.web3, "eth_call", [
 			{
 				from: GENESIS_ACCOUNT,
@@ -158,7 +160,7 @@ describeWithFrontier("Frontier RPC (RPC execution)", (context) => {
 			},
 		]);
 
-		expect(result.result).to.be.equal("0x30464");
+		expect(result.result).to.be.equal("0x2e4b4");
 	});
 
 	step("should estimateGas with gas limit up to 10x block gas limit", async function () {
@@ -170,7 +172,7 @@ describeWithFrontier("Frontier RPC (RPC execution)", (context) => {
 			},
 		]);
 
-		expect(result.result).to.be.equal("0x30464");
+		expect(result.result).to.be.equal("0x2e4b4");
 	});
 
 	step("shouldn't estimateGas with gas limit up higher than 10x block gas limit", async function () {
