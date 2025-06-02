@@ -79,6 +79,7 @@ use scale_info::TypeInfo;
 // Substrate
 use frame_support::{
 	dispatch::{DispatchResultWithPostInfo, Pays, PostDispatchInfo},
+	ensure,
 	storage::{child::KillStorageResult, KeyPrefixIterator},
 	traits::{
 		fungible::{Balanced, Credit, Debt},
@@ -308,7 +309,32 @@ pub mod pallet {
 			nonce: Option<U256>,
 			access_list: Vec<(H160, Vec<H256>)>,
 		) -> DispatchResultWithPostInfo {
+			// let who = ensure_signed(origin.clone())?;
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
+
+			// let mini_balance = <T::Currency as Inspect<T::AccountId>>::minimum_balance();
+			Self::ensure_balance_for_contract_creation(&source)?;
+			// let balance = Self::account_basic(&source);
+
+			// // if balance.0.balance;
+			// let mini_balance = <T::Currency as frame_support::traits::Currency<
+			// 	<T as frame_system::Config>::AccountId,
+			// >>::minimum_balance();
+
+			// let mini_balance_origin = mini_balance;
+
+			// let mini_balance = SubstrateBalance::from(
+			// 	UniqueSaturatedInto::<u128>::unique_saturated_into(mini_balance),
+			// );
+
+			// // let mini_balance_u64: u64 = mini_balance.into_u64_saturating();
+
+			// let mini_balance = T::BalanceConverter::into_evm_balance(mini_balance)
+			// 	.unwrap_or(EvmBalance::from(0u64));
+
+			// if balance.0.balance < mini_balance.0 {
+			// 	return Err(Error::<T>::BalanceLow.into());
+			// }
 
 			let whitelist = <WhitelistedCreators<T>>::get();
 			let whitelist_disabled = <DisableWhitelistCheck<T>>::get();
@@ -349,6 +375,15 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
+					let mini_balance = <T::Currency as frame_support::traits::Currency<
+						<T as frame_system::Config>::AccountId,
+					>>::minimum_balance();
+					T::Currency::transfer(
+						&T::AddressMapping::into_account_id(source),
+						&T::AddressMapping::into_account_id(create_address),
+						mini_balance,
+						ExistenceRequirement::AllowDeath,
+					)?;
 					Pallet::<T>::deposit_event(Event::<T>::Created {
 						address: create_address,
 					});
@@ -400,6 +435,7 @@ pub mod pallet {
 			access_list: Vec<(H160, Vec<H256>)>,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
+			Self::ensure_balance_for_contract_creation(&source)?;
 
 			let whitelist = <WhitelistedCreators<T>>::get();
 			let whitelist_disabled = <DisableWhitelistCheck<T>>::get();
@@ -441,6 +477,15 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
+					let mini_balance = <T::Currency as frame_support::traits::Currency<
+						<T as frame_system::Config>::AccountId,
+					>>::minimum_balance();
+					T::Currency::transfer(
+						&T::AddressMapping::into_account_id(source),
+						&T::AddressMapping::into_account_id(create_address),
+						mini_balance,
+						ExistenceRequirement::AllowDeath,
+					)?;
 					Pallet::<T>::deposit_event(Event::<T>::Created {
 						address: create_address,
 					});
@@ -952,7 +997,7 @@ impl<T: Config> Pallet<T> {
 			T::Currency::reducible_balance(&account_id, Preservation::Preserve, Fortitude::Polite);
 		let balance_sub =
 			SubstrateBalance::from(UniqueSaturatedInto::<u128>::unique_saturated_into(balance));
-		let balance_eth =
+		let balance_eth: EvmBalance =
 			T::BalanceConverter::into_evm_balance(balance_sub).unwrap_or(EvmBalance::from(0u64));
 
 		(
@@ -970,6 +1015,18 @@ impl<T: Config> Pallet<T> {
 		let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
 
 		T::FindAuthor::find_author(pre_runtime_digests).unwrap_or_default()
+	}
+
+	/// Ensure balance to pre fund contract creation.
+	pub fn ensure_balance_for_contract_creation(source: &H160) -> DispatchResultWithPostInfo {
+		let account_id = T::AddressMapping::into_account_id(*source);
+		let balance =
+			T::Currency::reducible_balance(&account_id, Preservation::Preserve, Fortitude::Polite);
+
+		let mini_balance = <T::Currency as Inspect<T::AccountId>>::minimum_balance();
+
+		ensure!(balance >= mini_balance, Error::<T>::BalanceLow);
+		Ok(().into())
 	}
 }
 
