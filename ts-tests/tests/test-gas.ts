@@ -15,7 +15,7 @@ import {
 	ETH_BLOCK_POV_LIMIT,
 	TEST_ERC20_BYTECODE,
 } from "./config";
-import { describeWithFrontier, createAndFinalizeBlock, customRequest } from "./util";
+import { describeWithFrontier, createAndFinalizeBlock, customRequest, ensureWhitelistCheckDisabled } from "./util";
 
 const TEST_ACCOUNT = "0x1111111111111111111111111111111111111111";
 
@@ -54,8 +54,10 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 	// to spin up a frontier node, it saves a lot of time.
 
 	it("eth_estimateGas for contract creation", async function () {
+		await ensureWhitelistCheckDisabled(context.api, context.web3);
+
 		// The value returned as an estimation by the evm with estimate mode ON.
-		let oneOffEstimation = 196701;
+		let oneOffEstimation = 189139;
 		let binarySearchEstimation = binarySearch(oneOffEstimation);
 		// Sanity check expect a variance of 10%.
 		expect(estimationVariance(binarySearchEstimation, oneOffEstimation)).to.be.lessThan(1);
@@ -97,7 +99,7 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 	it("eth_estimateGas should handle AccessList alias", async function () {
 		// The value returned as an estimation by the evm with estimate mode ON.
 		// 4300 == 1900 for one key and 2400 for one storage.
-		let oneOffEstimation = 196701 + 4300;
+		let oneOffEstimation = 189139 + 4300;
 		let binarySearchEstimation = binarySearch(oneOffEstimation);
 		// Sanity check expect a variance of 10%.
 		expect(estimationVariance(binarySearchEstimation, oneOffEstimation)).to.be.lessThan(1);
@@ -119,17 +121,30 @@ describeWithFrontier("Frontier RPC (Gas)", (context) => {
 	});
 
 	it("eth_estimateGas 0x0 gasPrice is equivalent to not setting one", async function () {
+		await ensureWhitelistCheckDisabled(context.api, context.web3);
+
 		let result = await context.web3.eth.estimateGas({
 			from: GENESIS_ACCOUNT,
 			data: Test.bytecode,
 			gasPrice: "0x0",
 		});
-		expect(result).to.equal(197732);
+		expect(result).to.equal(189620);
 		result = await context.web3.eth.estimateGas({
 			from: GENESIS_ACCOUNT,
 			data: Test.bytecode,
 		});
-		expect(result).to.equal(197732);
+		expect(result).to.equal(189620);
+	});
+
+	it("eth_estimateGas should ignore nonce", async function () {
+		await ensureWhitelistCheckDisabled(context.api, context.web3);
+
+		let result = await context.web3.eth.estimateGas({
+			from: GENESIS_ACCOUNT,
+			data: Test.bytecode,
+			nonce: 42, // Arbitrary nonce value
+		});
+		expect(result).to.equal(189620);
 	});
 
 	it("tx gas limit below ETH_BLOCK_GAS_LIMIT", async function () {
@@ -183,15 +198,15 @@ describeWithFrontier("Frontier RPC (Gas limit Weightv2 ref time)", (context) => 
 	const STORAGE_LOOP_CONTRACT_ABI = StorageLoop.abi as AbiItem[];
 
 	// First call to contract storageLoop method
-	const FIRST_CALL = 752_450;
+	const FIRST_CALL = 611_438;
 	// Rest of calls
-	const CALL_COST = 735_350;
+	const CALL_COST = 594_338;
 	// Block gas limit
 	const BLOCK_GAS_LIMIT = ETH_BLOCK_GAS_LIMIT - FIRST_CALL;
 	// Number of calls per block
-	const CALLS_PER_BLOCK = Math.floor(BLOCK_GAS_LIMIT / CALL_COST) + 1;
+	const CALLS_PER_BLOCK = Math.floor(BLOCK_GAS_LIMIT / CALL_COST) + 1; // +1 to count first call
 	// Available space left after all calls
-	const REMNANT = Math.floor(ETH_BLOCK_GAS_LIMIT - (CALL_COST * (CALLS_PER_BLOCK - 1) + FIRST_CALL));
+	const REMNANT = Math.floor(BLOCK_GAS_LIMIT - CALL_COST * (CALLS_PER_BLOCK - 1));
 	// Number of transfers per available space left
 	const TRANSFERS_PER_BLOCK = Math.floor(REMNANT / 21_000);
 
@@ -228,7 +243,7 @@ describeWithFrontier("Frontier RPC (Gas limit Weightv2 ref time)", (context) => 
 					to: contract.options.address,
 					data: data.encodeABI(),
 					gasPrice: "0x3B9ACA00",
-					gas: "0x100000",
+					gas: `0x${(FIRST_CALL + 5000).toString(16)}`,
 					nonce,
 				},
 				GENESIS_ACCOUNT_PRIVATE_KEY
@@ -238,7 +253,7 @@ describeWithFrontier("Frontier RPC (Gas limit Weightv2 ref time)", (context) => 
 		}
 		// because we are using Math.floor for everything, at the end there is room for an additional
 		// transfer.
-		for (var i = 0; i < TRANSFERS_PER_BLOCK + 1; i++) {
+		for (var i = 0; i < TRANSFERS_PER_BLOCK; i++) {
 			const tx = await context.web3.eth.accounts.signTransaction(
 				{
 					from: GENESIS_ACCOUNT,
@@ -250,14 +265,14 @@ describeWithFrontier("Frontier RPC (Gas limit Weightv2 ref time)", (context) => 
 				},
 				GENESIS_ACCOUNT_PRIVATE_KEY
 			);
-			let r = await customRequest(context.web3, "eth_sendRawTransaction", [tx.rawTransaction]);
+			await customRequest(context.web3, "eth_sendRawTransaction", [tx.rawTransaction]);
 			nonce++;
 		}
 
 		await createAndFinalizeBlock(context.web3);
 
 		let latest = await context.web3.eth.getBlock("latest");
-		expect(latest.transactions.length).to.be.eq(CALLS_PER_BLOCK + TRANSFERS_PER_BLOCK + 1);
+		expect(latest.transactions.length).to.be.eq(CALLS_PER_BLOCK + TRANSFERS_PER_BLOCK);
 		expect(latest.gasUsed).to.be.lessThanOrEqual(ETH_BLOCK_GAS_LIMIT);
 		expect(ETH_BLOCK_GAS_LIMIT - latest.gasUsed).to.be.lessThan(21_000);
 	});
@@ -267,20 +282,20 @@ describeWithFrontier("Frontier RPC (Gas limit Weightv2 pov size)", (context) => 
 	const STORAGE_LOOP_CONTRACT_BYTECODE = StorageLoop.bytecode;
 	const STORAGE_LOOP_CONTRACT_ABI = StorageLoop.abi as AbiItem[];
 
-	// First call to contract storageLoop method
-	const FIRST_CALL = 752_450;
-	// Rest of calls
-	const CALL_COST = 735_350;
-	// Block gas limit
-	const BLOCK_GAS_LIMIT = ETH_BLOCK_GAS_LIMIT - FIRST_CALL;
-	// Number of calls per block
-	const CALLS_PER_BLOCK = Math.floor(BLOCK_GAS_LIMIT / CALL_COST) + 1;
-	// Available space left after all calls
-	const REMNANT = Math.floor(ETH_BLOCK_GAS_LIMIT - (CALL_COST * (CALLS_PER_BLOCK - 1) + FIRST_CALL));
 	// Big transfer
-	const CONTRACT_TRANSFER_EFFECTIVE_GAS = 100_520;
+	const CONTRACT_TRANSFER_EFFECTIVE_GAS = 109_116;
+	// First call to contract storageLoop method
+	const FIRST_CALL = 611_438;
+	// Rest of calls
+	const CALL_COST = 594_338;
+	// Block gas limit
+	const BLOCK_GAS_LIMIT = ETH_BLOCK_GAS_LIMIT - (FIRST_CALL + CONTRACT_TRANSFER_EFFECTIVE_GAS);
+	// Number of calls per block
+	const CALLS_PER_BLOCK = Math.floor(BLOCK_GAS_LIMIT / CALL_COST) + 1; // +1 to count first call
+	// Available space left after all calls
+	const REMNANT = Math.floor(BLOCK_GAS_LIMIT - CALL_COST * (CALLS_PER_BLOCK - 1));
 	// Number of transfers per available space left
-	const TRANSFERS_PER_BLOCK = Math.floor((REMNANT - CONTRACT_TRANSFER_EFFECTIVE_GAS) / 21_000);
+	const TRANSFERS_PER_BLOCK = Math.floor(REMNANT / 21_000) + 1; // +1 to count big transfer
 
 	let contractAddress;
 	before("create the contract", async function () {
@@ -368,7 +383,7 @@ describeWithFrontier("Frontier RPC (Gas limit Weightv2 pov size)", (context) => 
 				},
 				GENESIS_ACCOUNT_PRIVATE_KEY
 			);
-			let r = await customRequest(context.web3, "eth_sendRawTransaction", [tx.rawTransaction]);
+			await customRequest(context.web3, "eth_sendRawTransaction", [tx.rawTransaction]);
 			nonce++;
 		}
 
@@ -411,6 +426,6 @@ describeWithFrontier("Frontier RPC (Invalid opcode estimate gas)", (context) => 
 		});
 		// The actual estimated value is irrelevant for this test purposes, we just want to verify that
 		// the binary search is not interrupted when an InvalidCode is returned by the evm.
-		expect(estimate).to.equal(85703);
+		expect(estimate).to.equal(85699);
 	});
 });

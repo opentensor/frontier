@@ -248,7 +248,8 @@ mod proof_size_test {
 			let expected_proof_size = ((read_account_metadata * 2)
 				+ reading_contract_len
 				+ reading_main_contract_len
-				+ is_empty_check + increase_nonce) as u64;
+				+ is_empty_check
+				+ increase_nonce) as u64;
 
 			let actual_proof_size = result
 				.weight_info
@@ -305,7 +306,8 @@ mod proof_size_test {
 			let expected_proof_size = (basic_account_size
 				+ read_account_metadata
 				+ reading_main_contract_len
-				+ is_empty_check + increase_nonce) as u64;
+				+ is_empty_check
+				+ increase_nonce) as u64;
 
 			let actual_proof_size = result
 				.weight_info
@@ -530,7 +532,8 @@ mod proof_size_test {
 			let expected_proof_size = ((read_account_metadata * 2)
 				+ reading_callee_contract_len
 				+ reading_main_contract_len
-				+ is_empty_check + increase_nonce) as u64;
+				+ is_empty_check
+				+ increase_nonce) as u64;
 
 			let actual_proof_size = result
 				.weight_info
@@ -631,6 +634,222 @@ mod proof_size_test {
 	}
 }
 
+mod storage_growth_test {
+	use super::*;
+	use crate::tests::proof_size_test::PROOF_SIZE_TEST_CALLEE_CONTRACT_BYTECODE;
+	use fp_evm::{
+		ACCOUNT_CODES_KEY_SIZE, ACCOUNT_CODES_METADATA_PROOF_SIZE, ACCOUNT_STORAGE_PROOF_SIZE,
+	};
+
+	const PROOF_SIZE_CALLEE_CONTRACT_BYTECODE_LEN: u64 = 116;
+	// The contract bytecode stored on chain.
+	const STORAGE_GROWTH_TEST_CONTRACT: &str =
+		include_str!("./res/storage_growth_test_contract_bytecode.txt");
+	const STORAGE_GROWTH_TEST_CONTRACT_BYTECODE_LEN: u64 = 455;
+
+	fn create_test_contract(
+		contract: &str,
+		gas_limit: u64,
+	) -> Result<CreateInfo, crate::RunnerError<crate::Error<Test>>> {
+		let whitelist = Vec::new();
+		let whitelist_disabled = true;
+
+		<Test as Config>::Runner::create(
+			H160::default(),
+			hex::decode(contract.trim_end()).expect("Failed to decode contract"),
+			U256::zero(),
+			gas_limit,
+			Some(FixedGasPrice::min_gas_price().0),
+			None,
+			None,
+			Vec::new(),
+			whitelist,
+			whitelist_disabled,
+			true, // transactional
+			true, // must be validated
+			Some(FixedGasWeightMapping::<Test>::gas_to_weight(
+				gas_limit, true,
+			)),
+			Some(0),
+			<Test as Config>::config(),
+		)
+	}
+
+	// Calls the given contract
+	fn call_test_contract(
+		contract_addr: H160,
+		call_data: &[u8],
+		value: U256,
+		gas_limit: u64,
+	) -> Result<CallInfo, crate::RunnerError<crate::Error<Test>>> {
+		<Test as Config>::Runner::call(
+			H160::default(),
+			contract_addr,
+			call_data.to_vec(),
+			value,
+			gas_limit,
+			Some(FixedGasPrice::min_gas_price().0),
+			None,
+			None,
+			Vec::new(),
+			true, // transactional
+			true, // must be validated
+			None,
+			Some(0),
+			<Test as Config>::config(),
+		)
+	}
+
+	// Computes the expected gas for contract creation (related to storage growth).
+	// `byte_code_len` represents the length of the contract bytecode stored on-chain.
+	fn expected_contract_create_storage_growth_gas(bytecode_len: u64) -> u64 {
+		let ratio = <<Test as Config>::GasLimitStorageGrowthRatio as Get<u64>>::get();
+		(ACCOUNT_CODES_KEY_SIZE + ACCOUNT_CODES_METADATA_PROOF_SIZE + bytecode_len) * ratio
+	}
+
+	/// Test that contract deployment succeeds when the necessary storage growth gas is provided.
+	#[test]
+	fn contract_deployment_should_succeed() {
+		new_test_ext().execute_with(|| {
+			let gas_limit: u64 = 85_000;
+
+			let result = create_test_contract(PROOF_SIZE_TEST_CALLEE_CONTRACT_BYTECODE, gas_limit)
+				.expect("create succeeds");
+
+			assert_eq!(
+				result.used_gas.effective.as_u64(),
+				expected_contract_create_storage_growth_gas(
+					PROOF_SIZE_CALLEE_CONTRACT_BYTECODE_LEN
+				)
+			);
+			assert_eq!(
+				result.exit_reason,
+				crate::ExitReason::Succeed(ExitSucceed::Returned)
+			);
+			// Assert that the contract entry exists in the storage.
+			assert!(AccountCodes::<Test>::contains_key(result.value));
+		});
+	}
+
+	// Test that contract creation with code initialization that results in new storage entries
+	// succeeds when the necessary storage growth gas is provided.
+	#[test]
+	fn contract_creation_with_code_initialization_should_succeed() {
+		new_test_ext().execute_with(|| {
+			let gas_limit: u64 = 863_394;
+			let ratio = <<Test as Config>::GasLimitStorageGrowthRatio as Get<u64>>::get();
+			// The constructor of the contract creates 3 new storage entries (uint256). So,
+			// the expected gas is the gas for contract creation + 3 * ACCOUNT_STORAGE_PROOF_SIZE.
+			let expected_storage_growth_gas = expected_contract_create_storage_growth_gas(
+				STORAGE_GROWTH_TEST_CONTRACT_BYTECODE_LEN,
+			) + (3 * ACCOUNT_STORAGE_PROOF_SIZE * ratio);
+
+			// Deploy the contract.
+			let result = create_test_contract(STORAGE_GROWTH_TEST_CONTRACT, gas_limit)
+				.expect("create succeeds");
+
+			assert_eq!(
+				result.used_gas.effective.as_u64(),
+				expected_storage_growth_gas
+			);
+			assert_eq!(
+				result.exit_reason,
+				crate::ExitReason::Succeed(ExitSucceed::Returned)
+			);
+		});
+	}
+
+	// Verify that saving new entries fails when insufficient storage growth gas is supplied.
+	#[test]
+	fn store_new_entries_should_fail_oog() {
+		new_test_ext().execute_with(|| {
+			let gas_limit: u64 = 863_394;
+			// Deploy the contract.
+			let res = create_test_contract(STORAGE_GROWTH_TEST_CONTRACT, gas_limit)
+				.expect("create succeeds");
+			let contract_addr = res.value;
+
+			let gas_limit = 120_000;
+			// Call the contract method store to store new entries.
+			let result = call_test_contract(
+				contract_addr,
+				&hex::decode("975057e7").unwrap(),
+				U256::zero(),
+				gas_limit,
+			)
+			.expect("call should succeed");
+
+			assert_eq!(
+				result.exit_reason,
+				crate::ExitReason::Error(crate::ExitError::OutOfGas)
+			);
+		});
+	}
+
+	// Verify that saving new entries succeeds when sufficient storage growth gas is supplied.
+	#[test]
+	fn store_new_entries_should_succeeds() {
+		new_test_ext().execute_with(|| {
+			let gas_limit: u64 = 863_394;
+			// Deploy the contract.
+			let res = create_test_contract(STORAGE_GROWTH_TEST_CONTRACT, gas_limit)
+				.expect("create succeeds");
+			let contract_addr = res.value;
+
+			let gas_limit = 128_000;
+			// Call the contract method store to store new entries.
+			let result = call_test_contract(
+				contract_addr,
+				&hex::decode("975057e7").unwrap(),
+				U256::zero(),
+				gas_limit,
+			)
+			.expect("call should succeed");
+
+			let expected_storage_growth_gas = 3
+				* ACCOUNT_STORAGE_PROOF_SIZE
+				* <<Test as Config>::GasLimitStorageGrowthRatio as Get<u64>>::get();
+			assert_eq!(
+				result.exit_reason,
+				crate::ExitReason::Succeed(ExitSucceed::Stopped)
+			);
+			assert_eq!(
+				result.used_gas.effective.as_u64(),
+				expected_storage_growth_gas
+			);
+		});
+	}
+
+	// Verify that updating existing storage entries does not incur any storage growth charges.
+	#[test]
+	fn update_exisiting_entries_succeeds() {
+		new_test_ext().execute_with(|| {
+			let gas_limit: u64 = 863_394;
+			// Deploy the contract.
+			let res = create_test_contract(STORAGE_GROWTH_TEST_CONTRACT, gas_limit)
+				.expect("create succeeds");
+			let contract_addr = res.value;
+
+			// Providing gas limit of 37_000 is enough to update existing entries, but not enough
+			// to store new entries.
+			let gas_limit = 37_000;
+			// Call the contract method update to update existing entries.
+			let result = call_test_contract(
+				contract_addr,
+				&hex::decode("a2e62045").unwrap(),
+				U256::zero(),
+				gas_limit,
+			)
+			.expect("call should succeed");
+
+			assert_eq!(
+				result.exit_reason,
+				crate::ExitReason::Succeed(ExitSucceed::Stopped)
+			);
+		});
+	}
+}
+
 type Balances = pallet_balances::Pallet<Test>;
 #[allow(clippy::upper_case_acronyms)]
 type EVM = Pallet<Test>;
@@ -673,10 +892,11 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		},
 	);
 
+	// Create the block author account with some balance.
+	let author = H160::from_str("0x1234500000000000000000000000000000000000").unwrap();
 	pallet_balances::GenesisConfig::<Test> {
-		// Create the block author account with some balance.
 		balances: vec![(
-			H160::from_str("0x1234500000000000000000000000000000000000").unwrap(),
+			<Test as Config>::AddressMapping::into_account_id(author),
 			12345,
 		)],
 	}
@@ -734,11 +954,11 @@ fn fee_deduction() {
 
 		// Seed account
 		let _ = <Test as Config>::Currency::deposit_creating(&substrate_addr, 100);
-		assert_eq!(Balances::free_balance(substrate_addr), 100);
+		assert_eq!(Balances::free_balance(&substrate_addr), 100);
 
 		// Deduct fees as 10 units
 		let imbalance = <<Test as Config>::OnChargeTransaction as OnChargeEVMTransaction<Test>>::withdraw_fee(&evm_addr, EvmBalance::from(10e9 as u128)).unwrap();
-		assert_eq!(Balances::free_balance(substrate_addr), 90);
+		assert_eq!(Balances::free_balance(&substrate_addr), 90);
 
 		// Refund fees as 5 units
 		<<Test as Config>::OnChargeTransaction as OnChargeEVMTransaction<Test>>::correct_and_deposit_fee(&evm_addr, EvmBalance::from(5e9 as u128), EvmBalance::from(5e9 as u128), imbalance);
@@ -754,8 +974,8 @@ fn ed_0_refund_patch_works() {
 		let evm_addr = H160::from_str("1000000000000000000000000000000000000003").unwrap();
 		let substrate_addr = <Test as Config>::AddressMapping::into_account_id(evm_addr);
 
-		let _ = <Test as Config>::Currency::deposit_creating(&substrate_addr, 21_777_000_000_000);
-		assert_eq!(Balances::free_balance(substrate_addr), 21_777_000_000_000);
+		let _ = <Test as Config>::Currency::deposit_creating(&substrate_addr, 21_777);
+		assert_eq!(Balances::free_balance(&substrate_addr), 21_777);
 
 		let _ = EVM::call(
 			RuntimeOrigin::root(),
@@ -770,7 +990,7 @@ fn ed_0_refund_patch_works() {
 			Vec::new(),
 		);
 		// All that was due, was refunded.
-		assert_eq!(Balances::free_balance(substrate_addr), 776_000_000_000);
+		assert_eq!(Balances::free_balance(&substrate_addr), 776);
 	});
 }
 
@@ -783,16 +1003,16 @@ fn ed_0_refund_patch_is_required() {
 		let substrate_addr = <Test as Config>::AddressMapping::into_account_id(evm_addr);
 
 		let _ = <Test as Config>::Currency::deposit_creating(&substrate_addr, 100);
-		assert_eq!(Balances::free_balance(substrate_addr), 100);
+		assert_eq!(Balances::free_balance(&substrate_addr), 100);
 
 		// Drain funds
 		let _ =
 			<<Test as Config>::OnChargeTransaction as OnChargeEVMTransaction<Test>>::withdraw_fee(
 				&evm_addr,
-				EvmBalance::from(100u64),
+				EvmBalance::from(100e9 as u128),
 			)
 			.unwrap();
-		assert_eq!(Balances::free_balance(substrate_addr), 0);
+		assert_eq!(Balances::free_balance(&substrate_addr), 0);
 
 		// Try to refund. With ED 0, although the balance is now 0, the account still exists.
 		// So its expected that calling `deposit_into_existing` results in the AccountData to increase the Balance.
@@ -835,7 +1055,10 @@ fn reducible_balance() {
 		Balances::set_lock(lock_id, &account_id, to_lock, WithdrawReasons::RESERVE);
 		// Reducible is, as currently configured in `account_basic`, (balance - lock - existential).
 		let reducible_balance = EVM::account_basic(&evm_addr).0.balance;
-		assert_eq!(reducible_balance, (genesis_balance - to_lock - existential));
+		assert_eq!(
+			reducible_balance,
+			(genesis_balance - (to_lock + existential) * 1e9 as u64)
+		);
 	});
 }
 
@@ -852,13 +1075,18 @@ fn author_should_get_tip() {
 			U256::from(1),
 			1000000,
 			U256::from(2_000_000_000),
-			Some(U256::from(1)),
+			// We set a tip high enough so the tip is non-zero in Substrate units.
+			Some(U256::from(1e9 as u128)),
 			None,
 			Vec::new(),
 		);
 		result.expect("EVM can be called");
 		let after_tip = EVM::account_basic(&author).0.balance;
-		assert_eq!(after_tip, (before_tip + 21000));
+		assert_eq!(
+			after_tip,
+			// We convert the tip to EVM units.
+			before_tip + (21000 * 1e9 as u128)
+		);
 	});
 }
 
@@ -884,7 +1112,11 @@ fn issuance_after_tip() {
 		let base_fee: u64 = <Test as Config>::FeeCalculator::min_gas_price()
 			.0
 			.unique_saturated_into();
-		assert_eq!(after_tip, (before_tip - (base_fee * 21_000)));
+		let fee_evm = EvmBalance::from(base_fee * 21_000);
+		let fee_sub = <Test as Config>::BalanceConverter::into_substrate_balance(fee_evm)
+			.unwrap()
+			.into_u64_saturating();
+		assert_eq!(after_tip, before_tip - fee_sub);
 	});
 }
 
@@ -923,7 +1155,7 @@ fn refunds_should_work() {
 			H160::default(),
 			H160::from_str("1000000000000000000000000000000000000001").unwrap(),
 			Vec::new(),
-			U256::from(1),
+			U256::from(1e9 as u128),
 			1000000,
 			U256::from(2_000_000_000),
 			None,
@@ -931,7 +1163,7 @@ fn refunds_should_work() {
 			Vec::new(),
 		);
 		let (base_fee, _) = <Test as Config>::FeeCalculator::min_gas_price();
-		let total_cost = (U256::from(21_000) * base_fee) + U256::from(1);
+		let total_cost = (U256::from(21_000) * base_fee) + U256::from(1e9 as u128);
 		let after_call = EVM::account_basic(&H160::default()).0.balance;
 		assert_eq!(after_call, before_call - total_cost);
 	});
@@ -955,7 +1187,7 @@ fn refunds_and_priority_should_work() {
 			H160::default(),
 			H160::from_str("1000000000000000000000000000000000000001").unwrap(),
 			Vec::new(),
-			U256::from(1),
+			U256::from(1e9 as u128),
 			1000000,
 			max_fee_per_gas,
 			Some(tip),
@@ -964,7 +1196,7 @@ fn refunds_and_priority_should_work() {
 		);
 		let (base_fee, _) = <Test as Config>::FeeCalculator::min_gas_price();
 		let actual_tip = (max_fee_per_gas - base_fee).min(tip) * used_gas;
-		let total_cost = (used_gas * base_fee) + actual_tip + U256::from(1);
+		let total_cost = (used_gas * base_fee) + actual_tip + U256::from(1e9 as u128);
 		let after_call = EVM::account_basic(&H160::default()).0.balance;
 		// The tip is deducted but never refunded to the caller.
 		assert_eq!(after_call, before_call - total_cost);
@@ -1040,12 +1272,12 @@ fn handle_sufficient_reference() {
 
 		// Using the create / remove account functions is the correct way to handle it.
 		EVM::create_account(addr_2, vec![1, 2, 3]);
-		let account_2 = frame_system::Account::<Test>::get(substrate_addr_2);
+		let account_2 = frame_system::Account::<Test>::get(&substrate_addr_2);
 		// We increased the sufficient reference by 1.
 		assert_eq!(account_2.sufficients, 1);
 		EVM::remove_account(&addr_2);
 		let account_2 = frame_system::Account::<Test>::get(substrate_addr_2);
-		assert_eq!(account_2.sufficients, 1);
+		assert_eq!(account_2.sufficients, 0);
 	});
 }
 

@@ -3,7 +3,7 @@ import chaiAsPromised from "chai-as-promised";
 
 import Test from "../build/contracts/Test.json";
 import { GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY, FIRST_CONTRACT_ADDRESS } from "./config";
-import { createAndFinalizeBlock, customRequest, describeWithFrontier } from "./util";
+import { createAndFinalizeBlock, customRequest, describeWithFrontier, ensureWhitelistCheckDisabled } from "./util";
 
 chaiUse(chaiAsPromised);
 
@@ -57,6 +57,7 @@ describeWithFrontier("Frontier RPC (Contract)", (context) => {
 	});
 
 	it("eth_call contract create should return code", async function () {
+		await ensureWhitelistCheckDisabled(context.api, context.web3);
 		expect(
 			await context.web3.eth.call({
 				data: TEST_CONTRACT_BYTECODE,
