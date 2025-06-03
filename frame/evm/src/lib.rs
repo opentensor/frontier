@@ -79,6 +79,7 @@ use scale_info::TypeInfo;
 // Substrate
 use frame_support::{
 	dispatch::{DispatchResultWithPostInfo, Pays, PostDispatchInfo},
+	ensure,
 	storage::KeyPrefixIterator,
 	traits::{
 		fungible::{Balanced, Credit, Debt},
@@ -103,9 +104,8 @@ use fp_account::AccountId20;
 use fp_evm::GenesisAccount;
 pub use fp_evm::{
 	Account, AccountProvider, CallInfo, CreateInfo, ExecutionInfoV2 as ExecutionInfo,
-	FeeCalculator, IsPrecompileResult, LinearCostPrecompile, Log, Precompile, PrecompileFailure,
-	PrecompileHandle, PrecompileOutput, PrecompileResult, PrecompileSet,
-	TransactionValidationError, Vicinity,
+	FeeCalculator, IsPrecompileResult, Log, Precompile, PrecompileFailure, PrecompileHandle,
+	PrecompileOutput, PrecompileResult, PrecompileSet, TransactionValidationError, Vicinity,
 };
 
 pub use self::{
@@ -404,30 +404,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			// let who = ensure_signed(origin.clone())?;
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
-
-			// let mini_balance = <T::Currency as Inspect<T::AccountId>>::minimum_balance();
 			Self::ensure_balance_for_contract_creation(&source)?;
-			// let balance = Self::account_basic(&source);
-
-			// // if balance.0.balance;
-			// let mini_balance = <T::Currency as frame_support::traits::Currency<
-			// 	<T as frame_system::Config>::AccountId,
-			// >>::minimum_balance();
-
-			// let mini_balance_origin = mini_balance;
-
-			// let mini_balance = SubstrateBalance::from(
-			// 	UniqueSaturatedInto::<u128>::unique_saturated_into(mini_balance),
-			// );
-
-			// // let mini_balance_u64: u64 = mini_balance.into_u64_saturating();
-
-			// let mini_balance = T::BalanceConverter::into_evm_balance(mini_balance)
-			// 	.unwrap_or(EvmBalance::from(0u64));
-
-			// if balance.0.balance < mini_balance.0 {
-			// 	return Err(Error::<T>::BalanceLow.into());
-			// }
 
 			let whitelist = <WhitelistedCreators<T>>::get();
 			let whitelist_disabled = <DisableWhitelistCheck<T>>::get();
@@ -468,14 +445,15 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
-					// T::Currency::minimum_balance();
-
-					// T::Currency::transfer(
-					// 	&T::AddressMapping::into_account_id(source),
-					// 	&T::AddressMapping::into_account_id(create_address),
-					// 	mini_balance,
-					// 	ExistenceRequirement::AllowDeath,
-					// )?;
+					let mini_balance = <<T as Config>::Currency as Currency<
+						<<T as Config>::AccountProvider as AccountProvider>::AccountId,
+					>>::minimum_balance();
+					T::Currency::transfer(
+						&T::AddressMapping::into_account_id(source),
+						&T::AddressMapping::into_account_id(create_address),
+						mini_balance,
+						ExistenceRequirement::AllowDeath,
+					)?;
 					Pallet::<T>::deposit_event(Event::<T>::Created {
 						address: create_address,
 					});
@@ -527,7 +505,7 @@ pub mod pallet {
 			access_list: Vec<(H160, Vec<H256>)>,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
-			// Self::ensure_balance_for_contract_creation(&source)?;
+			Self::ensure_balance_for_contract_creation(&source)?;
 
 			let whitelist = <WhitelistedCreators<T>>::get();
 			let whitelist_disabled = <DisableWhitelistCheck<T>>::get();
@@ -569,15 +547,15 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
-					// let mini_balance = <T::Currency as frame_support::traits::Currency<
-					// 	<T as frame_system::Config>::AccountId,
-					// >>::minimum_balance();
-					// T::Currency::transfer(
-					// 	&T::AddressMapping::into_account_id(source),
-					// 	&T::AddressMapping::into_account_id(create_address),
-					// 	mini_balance,
-					// 	ExistenceRequirement::AllowDeath,
-					// )?;
+					let mini_balance = <<T as Config>::Currency as Currency<
+						<<T as Config>::AccountProvider as AccountProvider>::AccountId,
+					>>::minimum_balance();
+					T::Currency::transfer(
+						&T::AddressMapping::into_account_id(source),
+						&T::AddressMapping::into_account_id(create_address),
+						mini_balance,
+						ExistenceRequirement::AllowDeath,
+					)?;
 					Pallet::<T>::deposit_event(Event::<T>::Created {
 						address: create_address,
 					});
@@ -1097,9 +1075,15 @@ impl<T: Config> Pallet<T> {
 		let balance =
 			T::Currency::reducible_balance(&account_id, Preservation::Preserve, Fortitude::Polite);
 
-		// let mini_balance = <T::Currency as Inspect<T::AccountId>>::minimum_balance();
+		let balance = UniqueSaturatedInto::<u64>::unique_saturated_into(balance);
 
-		// ensure!(balance >= mini_balance, Error::<T>::BalanceLow);
+		let mini_balance = <<T as Config>::Currency as Currency<
+			<<T as Config>::AccountProvider as AccountProvider>::AccountId,
+		>>::minimum_balance();
+
+		let mini_balance = UniqueSaturatedInto::<u64>::unique_saturated_into(mini_balance);
+
+		ensure!(balance >= mini_balance, Error::<T>::BalanceLow);
 		Ok(().into())
 	}
 }

@@ -38,8 +38,8 @@ use frame_support::{
 use sp_runtime::traits::Dispatchable;
 // Frontier
 use fp_evm::{
-	ExitError, ExitSucceed, LinearCostPrecompile, Precompile, PrecompileFailure, PrecompileHandle,
-	PrecompileOutput, PrecompileResult,
+	ExitError, ExitSucceed, Precompile, PrecompileFailure, PrecompileHandle, PrecompileOutput,
+	PrecompileResult,
 };
 use pallet_evm::{AddressMapping, GasWeightMapping};
 
