@@ -310,8 +310,6 @@ pub mod pallet {
 			access_list: Vec<(H160, Vec<H256>)>,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
-			Self::ensure_balance_for_contract_creation(&source)?;
-
 			let whitelist = <WhitelistedCreators<T>>::get();
 			let whitelist_disabled = <DisableWhitelistCheck<T>>::get();
 			let is_transactional = true;
@@ -351,16 +349,6 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
-					let mini_balance =
-						<<T as Config>::Currency as frame_support::traits::Currency<
-							T::AccountId,
-						>>::minimum_balance();
-					T::Currency::transfer(
-						&T::AddressMapping::into_account_id(source),
-						&T::AddressMapping::into_account_id(create_address),
-						mini_balance,
-						ExistenceRequirement::AllowDeath,
-					)?;
 					Pallet::<T>::deposit_event(Event::<T>::Created {
 						address: create_address,
 					});
@@ -412,7 +400,6 @@ pub mod pallet {
 			access_list: Vec<(H160, Vec<H256>)>,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
-			Self::ensure_balance_for_contract_creation(&source)?;
 
 			let whitelist = <WhitelistedCreators<T>>::get();
 			let whitelist_disabled = <DisableWhitelistCheck<T>>::get();
@@ -454,16 +441,6 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
-					let mini_balance =
-						<<T as Config>::Currency as frame_support::traits::Currency<
-							T::AccountId,
-						>>::minimum_balance();
-					T::Currency::transfer(
-						&T::AddressMapping::into_account_id(source),
-						&T::AddressMapping::into_account_id(create_address),
-						mini_balance,
-						ExistenceRequirement::AllowDeath,
-					)?;
 					Pallet::<T>::deposit_event(Event::<T>::Created {
 						address: create_address,
 					});
@@ -562,6 +539,10 @@ pub mod pallet {
 		Undefined,
 		/// Origin is not allowed to perform the operation.
 		NotAllowed,
+		/// Not enough balance to pay existential deposit
+		BalanceLowForExistentialDeposit,
+		/// Token transfer to new contract failed
+		TransferToNewContractFailed,
 	}
 
 	impl<T> From<TransactionValidationError> for Error<T> {
@@ -996,7 +977,10 @@ impl<T: Config> Pallet<T> {
 	}
 
 	/// Ensure balance to pre fund contract creation.
-	pub fn ensure_balance_for_contract_creation(source: &H160) -> DispatchResultWithPostInfo {
+	pub fn ensure_balance_for_contract_creation(
+		source: &H160,
+		// ) -> Result<(), sp_runtime::DispatchError> {
+	) -> Result<(), Error<T>> {
 		let account_id = T::AddressMapping::into_account_id(*source);
 		let balance =
 			T::Currency::reducible_balance(&account_id, Preservation::Preserve, Fortitude::Polite);
@@ -1007,8 +991,28 @@ impl<T: Config> Pallet<T> {
 
 		let mini_balance = UniqueSaturatedInto::<u64>::unique_saturated_into(mini_balance);
 
-		ensure!(balance >= mini_balance, Error::<T>::BalanceLow);
+		ensure!(
+			balance >= mini_balance,
+			Error::<T>::BalanceLowForExistentialDeposit
+		);
 		Ok(().into())
+	}
+
+	pub fn transfer_minimal_to_new_contract(
+		source: &H160,
+		create_address: &H160,
+	) -> Result<(), Error<T>> {
+		let mini_balance = <<T as Config>::Currency as frame_support::traits::Currency<
+			T::AccountId,
+		>>::minimum_balance();
+		T::Currency::transfer(
+			&T::AddressMapping::into_account_id(*source),
+			&T::AddressMapping::into_account_id(*create_address),
+			mini_balance,
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| Error::<T>::TransferToNewContractFailed)?;
+		Ok(())
 	}
 }
 

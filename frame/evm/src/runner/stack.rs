@@ -47,7 +47,9 @@ use fp_evm::{
 };
 
 use crate::{
-	runner::Runner as RunnerT, AccountCodes, AccountCodesMetadata, AccountStorages, AddressMapping, BalanceConverter, BalanceOf, BlockHashMapping, Config, Error, Event, EvmBalance, FeeCalculator, OnChargeEVMTransaction, OnCreate, Pallet, RunnerError
+	runner::Runner as RunnerT, AccountCodes, AccountCodesMetadata, AccountStorages, AddressMapping,
+	BalanceConverter, BalanceOf, BlockHashMapping, Config, Error, Event, EvmBalance, FeeCalculator,
+	OnChargeEVMTransaction, OnCreate, Pallet, RunnerError,
 };
 
 #[cfg(feature = "forbid-evm-reentrancy")]
@@ -472,6 +474,10 @@ where
 		proof_size_base_cost: Option<u64>,
 		config: &evm::Config,
 	) -> Result<CreateInfo, RunnerError<Self::Error>> {
+		Pallet::<T>::ensure_balance_for_contract_creation(&source).map_err(|_| RunnerError {
+			error: Error::<T>::BalanceLow,
+			weight: Weight::default(),
+		})?;
 		if validate {
 			if !disable_whitelist_check && !whitelist.contains(&source) {
 				return Err(RunnerError {
@@ -497,7 +503,7 @@ where
 			)?;
 		}
 		let precompiles = T::PrecompilesValue::get();
-		Self::execute(
+		let result = Self::execute(
 			source,
 			value,
 			gas_limit,
@@ -515,7 +521,22 @@ where
 					executor.transact_create(source, value, init, gas_limit, access_list);
 				(reason, address)
 			},
-		)
+		);
+		if let Ok(create_info) = &result {
+			match create_info {
+				CreateInfo {
+					exit_reason: ExitReason::Succeed(_),
+					value: create_address,
+					..
+				} => Pallet::<T>::transfer_minimal_to_new_contract(&source, &create_address)
+					.map_err(|_| RunnerError {
+						error: Error::<T>::BalanceLow,
+						weight: Weight::default(),
+					})?,
+				_ => {}
+			}
+		}
+		result
 	}
 
 	fn create2(
@@ -536,6 +557,12 @@ where
 		proof_size_base_cost: Option<u64>,
 		config: &evm::Config,
 	) -> Result<CreateInfo, RunnerError<Self::Error>> {
+		Pallet::<T>::ensure_balance_for_contract_creation(&source).map_err(|error| {
+			RunnerError {
+				error,
+				weight: Weight::default(),
+			}
+		})?;
 		if validate {
 			if !disable_whitelist_check && !whitelist.contains(&source) {
 				return Err(RunnerError {
@@ -562,7 +589,7 @@ where
 		}
 		let precompiles = T::PrecompilesValue::get();
 		let code_hash = H256::from(sp_io::hashing::keccak_256(&init));
-		Self::execute(
+		let result = Self::execute(
 			source,
 			value,
 			gas_limit,
@@ -584,7 +611,22 @@ where
 					executor.transact_create2(source, value, init, salt, gas_limit, access_list);
 				(reason, address)
 			},
-		)
+		);
+		if let Ok(create_info) = &result {
+			match create_info {
+				CreateInfo {
+					exit_reason: ExitReason::Succeed(_),
+					value: create_address,
+					..
+				} => Pallet::<T>::transfer_minimal_to_new_contract(&source, &create_address)
+					.map_err(|_| RunnerError {
+						error: Error::<T>::BalanceLow,
+						weight: Weight::default(),
+					})?,
+				_ => {}
+			}
+		}
+		result
 	}
 }
 
@@ -925,8 +967,9 @@ where
 		let target = T::AddressMapping::into_account_id(transfer.target);
 
 		// Adjust decimals
-		let value_sub = T::BalanceConverter::into_substrate_balance(EvmBalance::new(transfer.value))
-			.ok_or(ExitError::OutOfFund)?;
+		let value_sub =
+			T::BalanceConverter::into_substrate_balance(EvmBalance::new(transfer.value))
+				.ok_or(ExitError::OutOfFund)?;
 
 		T::Currency::transfer(
 			&source,
