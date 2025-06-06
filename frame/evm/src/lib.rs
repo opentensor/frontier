@@ -654,6 +654,10 @@ pub mod pallet {
 		Undefined,
 		/// Origin is not allowed to perform the operation.
 		NotAllowed,
+		/// Not enough balance to pay existential deposit
+		BalanceLowForExistentialDeposit,
+		/// Token transfer to new contract failed
+		TransferToNewContractFailed,
 	}
 
 	impl<T> From<TransactionValidationError> for Error<T> {
@@ -1070,7 +1074,10 @@ impl<T: Config> Pallet<T> {
 	}
 
 	/// Ensure balance to pre fund contract creation.
-	pub fn ensure_balance_for_contract_creation(source: &H160) -> DispatchResultWithPostInfo {
+	pub fn ensure_balance_for_contract_creation(
+		source: &H160,
+		// ) -> Result<(), sp_runtime::DispatchError> {
+	) -> Result<(), Error<T>> {
 		let account_id = T::AddressMapping::into_account_id(*source);
 		let balance =
 			T::Currency::reducible_balance(&account_id, Preservation::Preserve, Fortitude::Polite);
@@ -1083,8 +1090,29 @@ impl<T: Config> Pallet<T> {
 
 		let mini_balance = UniqueSaturatedInto::<u64>::unique_saturated_into(mini_balance);
 
-		ensure!(balance >= mini_balance, Error::<T>::BalanceLow);
+		ensure!(
+			balance >= mini_balance,
+			Error::<T>::BalanceLowForExistentialDeposit
+		);
 		Ok(().into())
+	}
+
+	/// transfer existential deposit to new contract
+	pub fn transfer_minimal_to_new_contract(
+		source: &H160,
+		create_address: &H160,
+	) -> Result<(), Error<T>> {
+		let mini_balance = <<T as Config>::Currency as Currency<
+			<<T as Config>::AccountProvider as AccountProvider>::AccountId,
+		>>::minimum_balance();
+		T::Currency::transfer(
+			&T::AddressMapping::into_account_id(*source),
+			&T::AddressMapping::into_account_id(*create_address),
+			mini_balance,
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| Error::<T>::TransferToNewContractFailed)?;
+		Ok(())
 	}
 }
 
