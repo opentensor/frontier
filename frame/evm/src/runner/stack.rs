@@ -574,20 +574,18 @@ where
 				(reason, address)
 			},
 		);
-		if let Ok(create_info) = &result {
-			if let CreateInfo {
-				exit_reason: ExitReason::Succeed(_),
-				value: create_address,
-				..
-			} = create_info
-			{
-				Pallet::<T>::transfer_minimal_to_new_contract(&source, create_address).map_err(
-					|_| RunnerError {
-						error: Error::<T>::BalanceLow,
-						weight: Weight::default(),
-					},
-				)?;
-			}
+		if let Ok(CreateInfo {
+			exit_reason: ExitReason::Succeed(_),
+			value: create_address,
+			..
+		}) = &result
+		{
+			Pallet::<T>::transfer_minimal_to_new_contract(&source, create_address).map_err(
+				|_| RunnerError {
+					error: Error::<T>::BalanceLow,
+					weight: Weight::default(),
+				},
+			)?;
 		}
 		result
 	}
@@ -663,20 +661,18 @@ where
 				(reason, address)
 			},
 		);
-		if let Ok(create_info) = &result {
-			if let CreateInfo {
-				exit_reason: ExitReason::Succeed(_),
-				value: create_address,
-				..
-			} = create_info
-			{
-				Pallet::<T>::transfer_minimal_to_new_contract(&source, create_address).map_err(
-					|_| RunnerError {
-						error: Error::<T>::BalanceLow,
-						weight: Weight::default(),
-					},
-				)?;
-			}
+		if let Ok(CreateInfo {
+			exit_reason: ExitReason::Succeed(_),
+			value: create_address,
+			..
+		}) = &result
+		{
+			Pallet::<T>::transfer_minimal_to_new_contract(&source, create_address).map_err(
+				|_| RunnerError {
+					error: Error::<T>::BalanceLow,
+					weight: Weight::default(),
+				},
+			)?;
 		}
 		result
 	}
