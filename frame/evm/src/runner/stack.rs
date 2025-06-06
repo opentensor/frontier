@@ -575,17 +575,18 @@ where
 			},
 		);
 		if let Ok(create_info) = &result {
-			match create_info {
-				CreateInfo {
-					exit_reason: ExitReason::Succeed(_),
-					value: create_address,
-					..
-				} => Pallet::<T>::transfer_minimal_to_new_contract(&source, &create_address)
-					.map_err(|_| RunnerError {
+			if let CreateInfo {
+				exit_reason: ExitReason::Succeed(_),
+				value: create_address,
+				..
+			} = create_info
+			{
+				Pallet::<T>::transfer_minimal_to_new_contract(&source, create_address).map_err(
+					|_| RunnerError {
 						error: Error::<T>::BalanceLow,
 						weight: Weight::default(),
-					})?,
-				_ => {}
+					},
+				)?;
 			}
 		}
 		result
@@ -663,17 +664,18 @@ where
 			},
 		);
 		if let Ok(create_info) = &result {
-			match create_info {
-				CreateInfo {
-					exit_reason: ExitReason::Succeed(_),
-					value: create_address,
-					..
-				} => Pallet::<T>::transfer_minimal_to_new_contract(&source, &create_address)
-					.map_err(|_| RunnerError {
+			if let CreateInfo {
+				exit_reason: ExitReason::Succeed(_),
+				value: create_address,
+				..
+			} = create_info
+			{
+				Pallet::<T>::transfer_minimal_to_new_contract(&source, create_address).map_err(
+					|_| RunnerError {
 						error: Error::<T>::BalanceLow,
 						weight: Weight::default(),
-					})?,
-				_ => {}
+					},
+				)?;
 			}
 		}
 		result

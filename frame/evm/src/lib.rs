@@ -1094,7 +1094,7 @@ impl<T: Config> Pallet<T> {
 			balance >= mini_balance,
 			Error::<T>::BalanceLowForExistentialDeposit
 		);
-		Ok(().into())
+		Ok(())
 	}
 
 	/// transfer existential deposit to new contract
