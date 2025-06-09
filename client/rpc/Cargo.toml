@@ -20,7 +20,7 @@ jsonrpsee = { workspace = true, features = ["server", "macros"] }
 libsecp256k1 = { workspace = true }
 log = { workspace = true }
 prometheus = { version = "0.13.4", default-features = false }
-rand = "0.8"
+rand = "0.9"
 rlp = { workspace = true }
 scale-codec = { workspace = true }
 schnellru = "0.2.4"
@@ -35,7 +35,6 @@ sc-network = { workspace = true }
 sc-network-sync = { workspace = true }
 sc-rpc = { workspace = true }
 sc-service = { workspace = true }
-sc-transaction-pool = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
 sc-utils = { workspace = true }
 sp-api = { workspace = true, features = ["default"] }
@@ -49,6 +48,8 @@ sp-io = { workspace = true, features = ["default"] }
 sp-runtime = { workspace = true, features = ["default"] }
 sp-state-machine = { workspace = true, features = ["default"] }
 sp-storage = { workspace = true, features = ["default"] }
+sp-timestamp = { workspace = true, features = ["default"], optional = true }
+sp-trie = { workspace = true, features = ["default"] }
 # Frontier
 fc-api = { workspace = true }
 fc-mapping-sync = { workspace = true }
