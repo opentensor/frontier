@@ -20,6 +20,7 @@ members = [
 	"frame/hotfix-sufficients",
 	"client/api",
 	"client/aura",
+	"client/babe",
 	"client/consensus",
 	"client/rpc-core",
 	"client/rpc",
@@ -92,6 +93,7 @@ sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk", tag = "pol
 sc-client-db = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7", default-features = false }
 sc-consensus = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7" }
 sc-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7" }
+sc-consensus-babe = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7" }
 sc-consensus-grandpa = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7" }
 sc-consensus-manual-seal = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7" }
 sc-executor = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7" }
@@ -113,6 +115,7 @@ sp-block-builder = { git = "https://github.com/paritytech/polkadot-sdk", tag = "
 sp-blockchain = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7" }
 sp-consensus = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7" }
 sp-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7", default-features = false }
+sp-consensus-babe = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7", default-features = false }
 sp-consensus-grandpa = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7", default-features = false }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7", default-features = false }
 sp-crypto-hashing = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2409-7", default-features = false }
@@ -171,6 +174,7 @@ ark-std = { version = "0.4.0", default-features = false }
 # Frontier Client
 fc-api = { path = "client/api" }
 fc-aura = { path = "client/aura" }
+fc-babe = { path = "client/babe" }
 fc-cli = { path = "client/cli", default-features = false }
 fc-consensus = { path = "client/consensus" }
 fc-db = { path = "client/db", default-features = false }
