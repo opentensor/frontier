@@ -402,7 +402,6 @@ pub mod pallet {
 			nonce: Option<U256>,
 			access_list: Vec<(H160, Vec<H256>)>,
 		) -> DispatchResultWithPostInfo {
-			// let who = ensure_signed(origin.clone())?;
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
 			Self::ensure_balance_for_contract_creation(&source)?;
 
