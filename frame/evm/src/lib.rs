@@ -1052,7 +1052,7 @@ impl<T: Config> Pallet<T> {
 			T::Currency::reducible_balance(&account_id, Preservation::Preserve, Fortitude::Polite);
 		let balance_sub =
 			SubstrateBalance::from(UniqueSaturatedInto::<u128>::unique_saturated_into(balance));
-		let balance_eth: EvmBalance =
+		let balance_eth =
 			T::BalanceConverter::into_evm_balance(balance_sub).unwrap_or(EvmBalance::from(0u64));
 
 		(
@@ -1073,10 +1073,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	/// Ensure balance to pre fund contract creation.
-	pub fn ensure_balance_for_contract_creation(
-		source: &H160,
-		// ) -> Result<(), sp_runtime::DispatchError> {
-	) -> Result<(), Error<T>> {
+	pub fn ensure_balance_for_contract_creation(source: &H160) -> Result<(), Error<T>> {
 		let account_id = T::AddressMapping::into_account_id(*source);
 		let balance =
 			T::Currency::reducible_balance(&account_id, Preservation::Preserve, Fortitude::Polite);
