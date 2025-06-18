@@ -961,6 +961,9 @@ fn create_foo_bar_contract_creator(
 	gas_limit: u64,
 	weight_limit: Option<Weight>,
 ) -> Result<CreateInfo, crate::RunnerError<crate::Error<Test>>> {
+	let whitelist = Vec::new();
+	let whitelist_disabled = true;
+
 	<Test as Config>::Runner::create(
 		H160::default(),
 		hex::decode(FOO_BAR_CONTRACT_CREATOR_BYTECODE.trim_end()).unwrap(),
@@ -970,6 +973,8 @@ fn create_foo_bar_contract_creator(
 		None,
 		None,
 		Vec::new(),
+		whitelist,
+		whitelist_disabled,
 		true, // transactional
 		true, // must be validated
 		weight_limit,
@@ -981,6 +986,8 @@ fn create_foo_bar_contract_creator(
 #[test]
 fn test_contract_deploy_succeeds_if_address_is_allowed() {
 	new_test_ext().execute_with(|| {
+		let whitelist = Vec::new();
+		let whitelist_disabled = true;
 		let gas_limit: u64 = 1_000_000;
 		let weight_limit = FixedGasWeightMapping::<Test>::gas_to_weight(gas_limit, true);
 
@@ -994,6 +1001,8 @@ fn test_contract_deploy_succeeds_if_address_is_allowed() {
 			None,
 			None,
 			Vec::new(),
+			whitelist,
+			whitelist_disabled,
 			true, // transactional
 			true, // must be validated
 			Some(weight_limit),
@@ -1007,6 +1016,8 @@ fn test_contract_deploy_succeeds_if_address_is_allowed() {
 #[test]
 fn test_contract_deploy_fails_if_address_not_allowed() {
 	new_test_ext().execute_with(|| {
+		let whitelist = Vec::new();
+		let whitelist_disabled = true;
 		let gas_limit: u64 = 1_000_000;
 		let weight_limit = FixedGasWeightMapping::<Test>::gas_to_weight(gas_limit, true);
 
@@ -1020,6 +1031,8 @@ fn test_contract_deploy_fails_if_address_not_allowed() {
 			None,
 			None,
 			Vec::new(),
+			whitelist,
+			whitelist_disabled,
 			true, // transactional
 			true, // must be validated
 			Some(weight_limit),
