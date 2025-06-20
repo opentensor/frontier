@@ -2674,6 +2674,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "fc-babe"
+version = "1.0.0-dev"
+dependencies = [
+ "fc-rpc",
+ "sc-client-api",
+ "sc-consensus-babe",
+ "sp-api",
+ "sp-consensus-babe",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-timestamp",
+]
+
+[[package]]
 name = "fc-cli"
 version = "1.0.0-dev"
 dependencies = [
