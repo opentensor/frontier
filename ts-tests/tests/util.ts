@@ -4,6 +4,8 @@ import { JsonRpcResponse } from "web3-core-helpers";
 import { spawn, ChildProcess } from "child_process";
 
 import { NODE_BINARY_NAME, CHAIN_ID } from "./config";
+import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
+import { cryptoWaitReady } from "@polkadot/util-crypto";
 
 export const PORT = 19931;
 export const RPC_PORT = 19932;
@@ -58,10 +60,14 @@ export async function createAndFinalizeBlockNowait(web3: Web3) {
 	}
 }
 
-export async function startFrontierNode(provider?: string): Promise<{
+export async function startFrontierNode(
+	provider?: string,
+	additionalArgs: string[] = []
+): Promise<{
 	web3: Web3;
 	binary: ChildProcess;
 	ethersjs: ethers.JsonRpcProvider;
+	api: ApiPromise;
 }> {
 	var web3;
 	if (!provider || provider == "http") {
@@ -84,6 +90,7 @@ export async function startFrontierNode(provider?: string): Promise<{
 		`--frontier-backend-type=${FRONTIER_BACKEND_TYPE}`,
 		`--tmp`,
 		`--unsafe-force-node-key-generation`,
+		...additionalArgs,
 	];
 	const binary = spawn(cmd, args);
 
@@ -141,27 +148,38 @@ export async function startFrontierNode(provider?: string): Promise<{
 		name: "frontier-dev",
 	});
 
-	return { web3, binary, ethersjs };
+	const wsProvider = new WsProvider(`ws://127.0.0.1:${RPC_PORT}`);
+	const api = await ApiPromise.create({ provider: wsProvider, noInitWarn: true });
+
+	return { web3, binary, ethersjs, api };
 }
 
-export function describeWithFrontier(title: string, cb: (context: { web3: Web3 }) => void, provider?: string) {
+export function describeWithFrontier(
+	title: string,
+	cb: (context: { web3: Web3; api: ApiPromise }) => void,
+	provider?: string,
+	additionalArgs: string[] = []
+) {
 	describe(title, () => {
 		let context: {
 			web3: Web3;
 			ethersjs: ethers.JsonRpcProvider;
-		} = { web3: null, ethersjs: null };
+			api: ApiPromise;
+		} = { web3: null, ethersjs: null, api: null };
 		let binary: ChildProcess;
 		// Making sure the Frontier node has started
 		before("Starting Frontier Test Node", async function () {
 			this.timeout(SPAWNING_TIME);
-			const init = await startFrontierNode(provider);
+			const init = await startFrontierNode(provider, additionalArgs);
 			context.web3 = init.web3;
 			context.ethersjs = init.ethersjs;
+			context.api = init.api;
 			binary = init.binary;
 		});
 
 		after(async function () {
 			//console.log(`\x1b[31m Killing RPC\x1b[0m`);
+			await context.api.disconnect();
 			binary.kill();
 		});
 
@@ -169,6 +187,41 @@ export function describeWithFrontier(title: string, cb: (context: { web3: Web3 }
 	});
 }
 
+export function describeWithFrontierFaTp(title: string, cb: (context: { web3: Web3 }) => void) {
+	describeWithFrontier(title, cb, undefined, [`--pool-type=fork-aware`]);
+}
+
+export function describeWithFrontierSsTp(title: string, cb: (context: { web3: Web3 }) => void) {
+	describeWithFrontier(title, cb, undefined, [`--pool-type=single-state`]);
+}
+
+export function describeWithFrontierAllPools(title: string, cb: (context: { web3: Web3 }) => void) {
+	describeWithFrontierSsTp(`[SsTp] ${title}`, cb);
+	describeWithFrontierFaTp(`[FaTp] ${title}`, cb);
+}
+
 export function describeWithFrontierWs(title: string, cb: (context: { web3: Web3 }) => void) {
 	describeWithFrontier(title, cb, "ws");
+}
+
+// Ensure the whitelist check is disabled by sending a sudo transaction to disable it
+export async function ensureWhitelistCheckDisabled(api: ApiPromise, web3: Web3) {
+	await cryptoWaitReady();
+
+	// Add sudo account (Alith) to keyring
+	const keyring = new Keyring({ type: "ethereum" });
+	const alith = keyring.addFromUri("0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133");
+
+	// If whitelist check is already disabled, do nothing
+	let isDisabled = await api.query.evm.disableWhitelistCheck();
+	if (isDisabled.toPrimitive()) {
+		return;
+	}
+
+	const disableCall = api.tx.evm.disableWhitelist(true);
+	const sudoCall = api.tx.sudo.sudo(disableCall);
+
+	// Send the transaction as sudo and finalize the block
+	await sudoCall.signAndSend(alith);
+	await createAndFinalizeBlock(web3);
 }

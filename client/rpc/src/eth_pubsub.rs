@@ -87,7 +87,7 @@ impl<B: BlockT, P, C, BE> Clone for EthPubSub<B, P, C, BE> {
 
 impl<B: BlockT, P, C, BE> EthPubSub<B, P, C, BE>
 where
-	P: TransactionPool<Block = B> + 'static,
+	P: TransactionPool<Block = B, Hash = B::Hash> + 'static,
 	C: ProvideRuntimeApi<B>,
 	C::Api: EthereumRuntimeRPCApi<B>,
 	C: HeaderBackend<B> + StorageProvider<B, BE>,
@@ -151,7 +151,7 @@ where
 		future::ready(res.map(|(block, receipts)| PubSubResult::logs(block, receipts, params)))
 	}
 
-	fn pending_transaction(&self, hash: &TxHash<P>) -> future::Ready<Option<PubSubResult>> {
+	fn pending_transactions(&self, hash: &TxHash<P>) -> future::Ready<Option<PubSubResult>> {
 		let res = if let Some(xt) = self.pool.ready_transaction(hash) {
 			let best_block = self.client.info().best_hash;
 
@@ -165,7 +165,7 @@ where
 				return future::ready(None);
 			};
 
-			let xts = vec![xt.data().clone()];
+			let xts = vec![xt.data().as_ref().clone()];
 
 			let txs: Option<Vec<EthereumTransaction>> = if api_version > 1 {
 				api.extrinsic_filter(best_block, xts).ok()
@@ -221,7 +221,7 @@ where
 impl<B: BlockT, P, C, BE> EthPubSubApiServer for EthPubSub<B, P, C, BE>
 where
 	B: BlockT,
-	P: TransactionPool<Block = B> + 'static,
+	P: TransactionPool<Block = B, Hash = B::Hash> + 'static,
 	C: ProvideRuntimeApi<B>,
 	C::Api: EthereumRuntimeRPCApi<B>,
 	C: BlockchainEvents<B> + 'static,
@@ -263,7 +263,7 @@ where
 					let pool = pubsub.pool.clone();
 					let stream = pool
 						.import_notification_stream()
-						.filter_map(move |hash| pubsub.pending_transaction(&hash));
+						.filter_map(move |hash| pubsub.pending_transactions(&hash));
 					PendingSubscription::from(pending)
 						.pipe_from_stream(stream, BoundedVecDeque::new(16))
 						.await;
