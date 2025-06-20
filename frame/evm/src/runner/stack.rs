@@ -52,8 +52,9 @@ use fp_evm::{
 use super::meter::StorageMeter;
 use crate::{
 	runner::Runner as RunnerT, AccountCodes, AccountCodesMetadata, AccountProvider,
-	AccountStorages, AddressMapping, BalanceConverter, BalanceOf, BlockHashMapping, Config, Error,
-	Event, EvmBalance, FeeCalculator, OnChargeEVMTransaction, OnCreate, Pallet, RunnerError,
+	AccountStorages, AddressMapping, BalanceConverter, BalanceOf, BlockHashMapping, Config,
+	EnsureCreateOrigin, Error, Event, EvmBalance, FeeCalculator, OnChargeEVMTransaction, OnCreate,
+	Pallet, RunnerError,
 };
 
 #[cfg(feature = "forbid-evm-reentrancy")]
@@ -578,6 +579,11 @@ where
 		config: &evm::Config,
 	) -> Result<CreateInfo, RunnerError<Self::Error>> {
 		let measured_proof_size_before = get_proof_size().unwrap_or_default();
+		let (_, weight) = T::FeeCalculator::min_gas_price();
+
+		T::CreateOriginFilter::check_create_origin(&source)
+			.map_err(|error| RunnerError { error, weight })?;
+
 		if validate {
 			if !disable_whitelist_check && !whitelist.contains(&source) {
 				return Err(RunnerError {
@@ -644,6 +650,11 @@ where
 		config: &evm::Config,
 	) -> Result<CreateInfo, RunnerError<Self::Error>> {
 		let measured_proof_size_before = get_proof_size().unwrap_or_default();
+		let (_, weight) = T::FeeCalculator::min_gas_price();
+
+		T::CreateOriginFilter::check_create_origin(&source)
+			.map_err(|error| RunnerError { error, weight })?;
+
 		if validate {
 			if !disable_whitelist_check && !whitelist.contains(&source) {
 				return Err(RunnerError {
@@ -1063,14 +1074,19 @@ where
 		self.substate.set_created(address);
 	}
 
-	fn set_code(&mut self, address: H160, code: Vec<u8>) {
+	fn set_code(
+		&mut self,
+		address: H160,
+		code: Vec<u8>,
+		caller: Option<H160>,
+	) -> Result<(), ExitError> {
 		log::debug!(
 			target: "evm",
 			"Inserting code ({} bytes) at {:?}",
 			code.len(),
 			address
 		);
-		Pallet::<T>::create_account(address, code);
+		Pallet::<T>::create_account(address, code, caller)
 	}
 
 	fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
