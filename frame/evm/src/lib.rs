@@ -663,12 +663,12 @@ pub mod pallet {
 		Undefined,
 		/// Origin is not allowed to perform the operation.
 		NotAllowed,
+		/// Address not allowed to deploy contracts either via CREATE or CALL(CREATE).
+		CreateOriginNotAllowed,
 		/// Not enough balance to pay existential deposit
 		BalanceLowForExistentialDeposit,
 		/// Token transfer to new contract failed
 		TransferToNewContractFailed,
-		/// Address not allowed to deploy contracts either via CREATE or CALL(CREATE).
-		CreateOriginNotAllowed,
 	}
 
 	impl<T> From<TransactionValidationError> for Error<T> {
