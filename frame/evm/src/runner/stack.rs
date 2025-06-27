@@ -578,6 +578,10 @@ where
 		proof_size_base_cost: Option<u64>,
 		config: &evm::Config,
 	) -> Result<CreateInfo, RunnerError<Self::Error>> {
+		Pallet::<T>::ensure_balance_for_contract_creation(&source).map_err(|_| RunnerError {
+			error: Error::<T>::BalanceLow,
+			weight: Weight::zero(),
+		})?;
 		let measured_proof_size_before = get_proof_size().unwrap_or_default();
 		let (_, weight) = T::FeeCalculator::min_gas_price();
 
@@ -609,7 +613,7 @@ where
 			)?;
 		}
 		let precompiles = T::PrecompilesValue::get();
-		Self::execute(
+		let result = Self::execute(
 			source,
 			value,
 			gas_limit,
@@ -628,7 +632,21 @@ where
 					executor.transact_create(source, value, init, gas_limit, access_list);
 				(reason, address)
 			},
-		)
+		);
+		if let Ok(CreateInfo {
+			exit_reason: ExitReason::Succeed(_),
+			value: create_address,
+			..
+		}) = &result
+		{
+			Pallet::<T>::transfer_minimal_to_new_contract(&source, create_address).map_err(
+				|_| RunnerError {
+					error: Error::<T>::BalanceLow,
+					weight: Weight::default(),
+				},
+			)?;
+		}
+		result
 	}
 
 	fn create2(
@@ -649,6 +667,10 @@ where
 		proof_size_base_cost: Option<u64>,
 		config: &evm::Config,
 	) -> Result<CreateInfo, RunnerError<Self::Error>> {
+		Pallet::<T>::ensure_balance_for_contract_creation(&source).map_err(|_| RunnerError {
+			error: Error::<T>::BalanceLow,
+			weight: Weight::zero(),
+		})?;
 		let measured_proof_size_before = get_proof_size().unwrap_or_default();
 		let (_, weight) = T::FeeCalculator::min_gas_price();
 
@@ -662,7 +684,6 @@ where
 					weight: Weight::zero(),
 				});
 			}
-
 			Self::validate(
 				source,
 				None,
@@ -681,7 +702,7 @@ where
 		}
 		let precompiles = T::PrecompilesValue::get();
 		let code_hash = H256::from(sp_io::hashing::keccak_256(&init));
-		Self::execute(
+		let result = Self::execute(
 			source,
 			value,
 			gas_limit,
@@ -704,7 +725,21 @@ where
 					executor.transact_create2(source, value, init, salt, gas_limit, access_list);
 				(reason, address)
 			},
-		)
+		);
+		if let Ok(CreateInfo {
+			exit_reason: ExitReason::Succeed(_),
+			value: create_address,
+			..
+		}) = &result
+		{
+			Pallet::<T>::transfer_minimal_to_new_contract(&source, create_address).map_err(
+				|_| RunnerError {
+					error: Error::<T>::BalanceLow,
+					weight: Weight::default(),
+				},
+			)?;
+		}
+		result
 	}
 }
 
