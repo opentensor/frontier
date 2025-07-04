@@ -12,6 +12,7 @@ description = "Babe consensus data provider for pending runtime calls"
 sp-api = { workspace = true }
 sp-consensus-babe = { workspace = true }
 sp-inherents = { workspace = true }
+sp-blockchain = { workspace = true }
 sp-runtime = { workspace = true }
 sp-timestamp = { workspace = true }
 sc-client-api = { workspace = true }

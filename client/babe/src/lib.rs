@@ -3,6 +3,7 @@ use std::{marker::PhantomData, sync::Arc};
 use fc_rpc::pending::ConsensusDataProvider;
 use sc_client_api::{AuxStore, UsageProvider};
 use sp_api::ProvideRuntimeApi;
+use sp_blockchain::Error;
 use sp_consensus_babe::{digests::CompatibleDigestItem, BabeApi, BabeConfiguration, Slot};
 use sp_inherents::InherentData;
 use sp_runtime::{traits::Block as BlockT, Digest, DigestItem};
@@ -21,13 +22,12 @@ where
 {
 	/// Creates a new instance of the [`BabeConsensusDataProvider`], requires that `client`
 	/// implements [`sp_consensus_babe::BabeApi`]
-	pub fn new(client: Arc<C>) -> Self {
-		let babe_config = sc_consensus_babe::configuration(&*client)
-			.expect("BabeConsensusDataProvider requires runtime with Babe configured");
-		Self {
+	pub fn new(client: Arc<C>) -> Result<Self, Error> {
+		let babe_config = sc_consensus_babe::configuration(&*client)?;
+		Ok(Self {
 			babe_config,
 			_phantom: PhantomData,
-		}
+		})
 	}
 }
 
@@ -58,4 +58,3 @@ impl<B: BlockT, C: Send + Sync> ConsensusDataProvider<B> for BabeConsensusDataPr
 		})
 	}
 }
-
