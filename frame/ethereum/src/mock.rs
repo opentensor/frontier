@@ -17,6 +17,7 @@
 
 //! Test utilities
 
+use core::str::FromStr;
 use ethereum::{TransactionAction, TransactionSignature};
 use rlp::RlpStream;
 // Substrate
@@ -28,7 +29,8 @@ use sp_runtime::{
 };
 // Frontier
 use pallet_evm::{
-	config_preludes::ChainId, AddressMapping, BalanceConverter, EvmBalance, SubstrateBalance,
+	config_preludes::ChainId, AddressMapping, BalanceConverter, EnsureAllowedCreateAddress,
+	EvmBalance, SubstrateBalance,
 };
 
 use super::*;
@@ -88,6 +90,9 @@ impl FindAuthor<H160> for FindAuthorTruncated {
 parameter_types! {
 	pub const TransactionByteFee: u64 = 1;
 	pub const GasLimitStorageGrowthRatio: u64 = 0;
+	// Alice is allowed to create contracts via CREATE and CALL(CREATE)
+	pub AllowedAddressesCreate: Vec<H160> = vec![H160::from_str("0x1a642f0e3c3af545e7acbd38b07251b3990914f1").expect("alice address")];
+	pub AllowedAddressesCreateInner: Vec<H160> = vec![H160::from_str("0x1a642f0e3c3af545e7acbd38b07251b3990914f1").expect("alice address")];
 }
 
 const EVM_DECIMALS_FACTOR: u64 = 1_000_000_000_u64;
@@ -131,6 +136,8 @@ impl pallet_evm::Config for Test {
 	type BalanceConverter = SubtensorEvmBalanceConverter;
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
 	type BlockHashMapping = crate::EthereumBlockHashMapping<Self>;
+	type CreateOriginFilter = EnsureAllowedCreateAddress<AllowedAddressesCreate>;
+	type CreateInnerOriginFilter = EnsureAllowedCreateAddress<AllowedAddressesCreateInner>;
 	type Currency = Balances;
 	type PrecompilesType = ();
 	type PrecompilesValue = ();
@@ -234,9 +241,12 @@ pub fn new_test_ext(accounts_len: usize) -> (Vec<AccountInfo>, sp_io::TestExtern
 		.map(|i| (pairs[i].account_id.clone(), 10_000_000))
 		.collect();
 
-	pallet_balances::GenesisConfig::<Test> { balances }
-		.assimilate_storage(&mut ext)
-		.unwrap();
+	pallet_balances::GenesisConfig::<Test> {
+		balances,
+		dev_accounts: None,
+	}
+	.assimilate_storage(&mut ext)
+	.unwrap();
 
 	(pairs, ext.into())
 }
@@ -259,9 +269,12 @@ pub fn new_test_ext_with_initial_balance(
 		.map(|i| (pairs[i].account_id.clone(), initial_balance))
 		.collect();
 
-	pallet_balances::GenesisConfig::<Test> { balances }
-		.assimilate_storage(&mut ext)
-		.unwrap();
+	pallet_balances::GenesisConfig::<Test> {
+		balances,
+		dev_accounts: None,
+	}
+	.assimilate_storage(&mut ext)
+	.unwrap();
 
 	(pairs, ext.into())
 }
