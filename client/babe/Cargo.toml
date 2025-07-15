@@ -9,14 +9,13 @@ description = "Babe consensus data provider for pending runtime calls"
 
 [dependencies]
 # Substrate
-sp-api = { workspace = true }
-sp-consensus-babe = { workspace = true }
-sp-inherents = { workspace = true }
-sp-blockchain = { workspace = true }
-sp-runtime = { workspace = true }
-sp-timestamp = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus-babe = { workspace = true }
+sp-api = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-consensus-babe = { workspace = true }
+sp-inherents = { workspace = true }
+sp-runtime = { workspace = true }
+sp-timestamp = { workspace = true }
 # Frontier
 fc-rpc = { workspace = true }
-
