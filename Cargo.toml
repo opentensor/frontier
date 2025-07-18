@@ -92,6 +92,7 @@ sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk", tag = "pol
 sc-client-db = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6", default-features = false }
 sc-consensus = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6" }
 sc-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6" }
+sc-consensus-babe = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6" }
 sc-consensus-grandpa = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6" }
 sc-consensus-manual-seal = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6" }
 sc-executor = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6" }
@@ -113,6 +114,7 @@ sp-block-builder = { git = "https://github.com/paritytech/polkadot-sdk", tag = "
 sp-blockchain = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6", default-features = false }
 sp-consensus = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6", default-features = false }
 sp-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6", default-features = false }
+sp-consensus-babe = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6", default-features = false }
 sp-consensus-grandpa = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6", default-features = false }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6", default-features = false }
 sp-crypto-hashing = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-stable2412-6", default-features = false }
