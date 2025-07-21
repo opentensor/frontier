@@ -19,12 +19,12 @@ hex = { workspace = true }
 jsonrpsee = { workspace = true, features = ["server", "macros"] }
 libsecp256k1 = { workspace = true }
 log = { workspace = true }
-prometheus = { version = "0.13.4", default-features = false }
-rand = "0.9"
+prometheus = { workspace = true }
+rand = { workspace = true }
 rlp = { workspace = true }
-scale-codec = { workspace = true }
-schnellru = "0.2.4"
 serde = { workspace = true }
+scale-codec = { workspace = true }
+schnellru = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 

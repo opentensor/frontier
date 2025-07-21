@@ -14,7 +14,7 @@ ark-std = { workspace = true }
 
 # Frontier
 fp-evm = { workspace = true }
-paste = "1.0.15"
+paste = { workspace = true }
 
 [dev-dependencies]
 # Frontier

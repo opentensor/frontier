@@ -15,7 +15,7 @@ ethereum = { workspace = true, features = ["with-scale", "with-serde"] }
 ethereum-types = { workspace = true }
 jsonrpsee = { workspace = true, features = ["server", "macros"] }
 rlp = { workspace = true }
-rustc-hex = "2.1.0"
+rustc-hex = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 

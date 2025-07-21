@@ -25,8 +25,6 @@ sp-runtime-interface = { workspace = true }
 # Polkadot / XCM
 xcm = { workspace = true }
 
-[dev-dependencies]
-
 [features]
 default = ["std"]
 std = [
