@@ -69,6 +69,7 @@ pub mod weights;
 
 use alloc::{borrow::Cow, collections::btree_map::BTreeMap, vec::Vec};
 use core::cmp::min;
+use ethereum::AuthorizationList;
 pub use evm::{
 	Config as EvmConfig, Context, ExitError, ExitFatal, ExitReason, ExitRevert, ExitSucceed,
 };
@@ -216,7 +217,7 @@ pub mod pallet {
 
 		/// EVM config used in the module.
 		fn config() -> &'static EvmConfig {
-			&CANCUN_CONFIG
+			&PECTRA_CONFIG
 		}
 	}
 
@@ -335,6 +336,7 @@ pub mod pallet {
 			max_priority_fee_per_gas: Option<U256>,
 			nonce: Option<U256>,
 			access_list: Vec<(H160, Vec<H256>)>,
+			authorization_list: AuthorizationList,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
 
@@ -350,6 +352,7 @@ pub mod pallet {
 				max_priority_fee_per_gas,
 				nonce,
 				access_list,
+				authorization_list,
 				is_transactional,
 				validate,
 				None,
@@ -411,6 +414,7 @@ pub mod pallet {
 			max_priority_fee_per_gas: Option<U256>,
 			nonce: Option<U256>,
 			access_list: Vec<(H160, Vec<H256>)>,
+			authorization_list: AuthorizationList,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
 
@@ -429,6 +433,7 @@ pub mod pallet {
 				access_list,
 				whitelist,
 				whitelist_disabled,
+				authorization_list,
 				is_transactional,
 				validate,
 				None,
@@ -502,6 +507,7 @@ pub mod pallet {
 			max_priority_fee_per_gas: Option<U256>,
 			nonce: Option<U256>,
 			access_list: Vec<(H160, Vec<H256>)>,
+			authorization_list: AuthorizationList,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
 
@@ -521,6 +527,7 @@ pub mod pallet {
 				access_list,
 				whitelist,
 				whitelist_disabled,
+				authorization_list,
 				is_transactional,
 				validate,
 				None,
@@ -660,6 +667,8 @@ pub mod pallet {
 				TransactionValidationError::InvalidFeeInput => Error::<T>::GasPriceTooLow,
 				TransactionValidationError::InvalidChainId => Error::<T>::InvalidChainId,
 				TransactionValidationError::InvalidSignature => Error::<T>::InvalidSignature,
+				TransactionValidationError::EmptyAuthorizationList => Error::<T>::Undefined,
+				TransactionValidationError::AuthorizationListTooLarge => Error::<T>::Undefined,
 				TransactionValidationError::UnknownError => Error::<T>::Undefined,
 			}
 		}
@@ -977,7 +986,7 @@ where
 	}
 }
 
-static CANCUN_CONFIG: EvmConfig = EvmConfig::cancun();
+static PECTRA_CONFIG: EvmConfig = EvmConfig::pectra();
 
 impl<T: Config> Pallet<T> {
 	/// Check whether an account is empty.
