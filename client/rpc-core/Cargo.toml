@@ -11,16 +11,16 @@ repository = { workspace = true }
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-ethereum = { workspace = true, features = ["with-scale", "with-serde"] }
-ethereum-types = { workspace = true }
-jsonrpsee = { workspace = true, features = ["server", "macros"] }
-rlp = { workspace = true }
-rustc-hex = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
+ethereum = { workspace = true, features = ["with-scale", "with-serde"], default-features = false }
+ethereum-types = { workspace = true, default-features = false }
+jsonrpsee = { workspace = true, features = ["server", "macros"], default-features = false }
+rlp = { workspace = true, default-features = false }
+rustc-hex = { workspace = true, default-features = false }
+serde = { workspace = true, default-features = false }
+serde_json = { workspace = true, default-features = false }
 
 # Substrate
-sp-crypto-hashing = { workspace = true, features = ["default"] }
+sp-crypto-hashing = { workspace = true, features = ["default"], default-features = false }
 
 [features]
 txpool = []

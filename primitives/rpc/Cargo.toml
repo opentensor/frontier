@@ -11,17 +11,17 @@ repository = { workspace = true }
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-ethereum = { workspace = true, features = ["with-scale"] }
-ethereum-types = { workspace = true }
-scale-codec = { workspace = true }
-scale-info = { workspace = true }
+ethereum = { workspace = true, features = ["with-scale"], default-features = false }
+ethereum-types = { workspace = true, default-features = false }
+scale-codec = { workspace = true, default-features = false }
+scale-info = { workspace = true, default-features = false }
 # Substrate
-sp-api = { workspace = true }
-sp-core = { workspace = true }
-sp-runtime = { workspace = true }
-sp-state-machine = { workspace = true }
+sp-api = { workspace = true, default-features = false }
+sp-core = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false }
+sp-state-machine = { workspace = true, default-features = false }
 # Frontier
-fp-evm = { workspace = true }
+fp-evm = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]

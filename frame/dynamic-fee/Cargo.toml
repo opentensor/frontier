@@ -11,22 +11,22 @@ repository = { workspace = true }
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-scale-codec = { workspace = true }
-scale-info = { workspace = true }
+scale-codec = { workspace = true, default-features = false }
+scale-info = { workspace = true, default-features = false }
 # Substrate
-frame-support = { workspace = true }
-frame-system = { workspace = true }
-sp-core = { workspace = true }
-sp-inherents = { workspace = true }
+frame-support = { workspace = true, default-features = false }
+frame-system = { workspace = true, default-features = false }
+sp-core = { workspace = true, default-features = false }
+sp-inherents = { workspace = true, default-features = false }
 # Frontier
-fp-dynamic-fee = { workspace = true }
-fp-evm = { workspace = true }
+fp-dynamic-fee = { workspace = true, default-features = false }
+fp-evm = { workspace = true, default-features = false }
 
 [dev-dependencies]
 # Substrate
-pallet-timestamp = { workspace = true, features = ["default"] }
-sp-io = { workspace = true, features = ["default"] }
-sp-runtime = { workspace = true, features = ["default"] }
+pallet-timestamp = { workspace = true, features = ["default"], default-features = false }
+sp-io = { workspace = true, features = ["default"], default-features = false }
+sp-runtime = { workspace = true, features = ["default"], default-features = false }
 
 [features]
 default = ["std"]

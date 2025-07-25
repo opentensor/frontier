@@ -11,43 +11,43 @@ repository = { workspace = true }
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-futures = { workspace = true }
-futures-timer = { workspace = true }
-log = { workspace = true }
-parking_lot = { workspace = true }
-tokio = { workspace = true, features = ["macros", "sync"], optional = true }
+futures = { workspace = true, default-features = false }
+futures-timer = { workspace = true, default-features = false }
+log = { workspace = true, default-features = false }
+parking_lot = { workspace = true, default-features = false }
+tokio = { workspace = true, features = ["macros", "sync"], optional = true, default-features = false }
 # Substrate
-sc-client-api = { workspace = true }
-sc-utils = { workspace = true }
-sp-api = { workspace = true }
-sp-blockchain = { workspace = true }
-sp-consensus = { workspace = true, features = ["default"] }
-sp-core = { workspace = true, optional = true }
-sp-runtime = { workspace = true }
+sc-client-api = { workspace = true, default-features = false }
+sc-utils = { workspace = true, default-features = false }
+sp-api = { workspace = true, default-features = false }
+sp-blockchain = { workspace = true, default-features = false }
+sp-consensus = { workspace = true, features = ["default"], default-features = false }
+sp-core = { workspace = true, optional = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false }
 # Frontier
 fc-db = { workspace = true, default-features = false }
-fc-storage = { workspace = true }
-fp-consensus = { workspace = true, features = ["default"] }
-fp-rpc = { workspace = true, features = ["default"] }
+fc-storage = { workspace = true, default-features = false }
+fp-consensus = { workspace = true, features = ["default"], default-features = false }
+fp-rpc = { workspace = true, features = ["default"], default-features = false }
 
 [dev-dependencies]
-ethereum = { workspace = true }
-ethereum-types = { workspace = true }
-scale-codec = { workspace = true }
-sqlx = { workspace = true, features = ["runtime-tokio-native-tls", "sqlite"] }
-tempfile = "3.20"
-tokio = { workspace = true, features = ["sync"] }
+ethereum = { workspace = true, default-features = false }
+ethereum-types = { workspace = true, default-features = false }
+scale-codec = { workspace = true, default-features = false }
+sqlx = { workspace = true, features = ["runtime-tokio-native-tls", "sqlite"], default-features = false }
+tempfile = { version = "3.20", default-features = false }
+tokio = { workspace = true, features = ["sync"], default-features = false }
 # Substrate
-sc-block-builder = { workspace = true }
-sc-client-db = { workspace = true, features = ["rocksdb"] }
-sp-consensus = { workspace = true }
-sp-core = { workspace = true, features = ["default"] }
-sp-io = { workspace = true }
-substrate-test-runtime-client = { workspace = true }
+sc-block-builder = { workspace = true, default-features = false }
+sc-client-db = { workspace = true, features = ["rocksdb"], default-features = false }
+sp-consensus = { workspace = true, default-features = false }
+sp-core = { workspace = true, features = ["default"], default-features = false }
+sp-io = { workspace = true, default-features = false }
+substrate-test-runtime-client = { workspace = true, default-features = false }
 # Frontier
-fp-consensus = { workspace = true, features = ["default"] }
-fp-storage = { workspace = true, features = ["default"] }
-frontier-template-runtime = { workspace = true, features = ["default"] }
+fp-consensus = { workspace = true, features = ["default"], default-features = false }
+fp-storage = { workspace = true, features = ["default"], default-features = false }
+frontier-template-runtime = { workspace = true, features = ["default"], default-features = false }
 
 [features]
 default = ["rocksdb"]

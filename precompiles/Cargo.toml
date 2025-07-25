@@ -6,40 +6,40 @@ edition = { workspace = true }
 version = "0.1.0"
 
 [dependencies]
-derive_more = { workspace = true, optional = true, features = ["display"] }
-environmental = { workspace = true }
-hex = { workspace = true }
+derive_more = { workspace = true, optional = true, features = ["display"], default-features = false }
+environmental = { workspace = true, default-features = false }
+hex = { workspace = true, default-features = false }
 hex-literal = { workspace = true, optional = true }
-impl-trait-for-tuples = { workspace = true }
-log = { workspace = true }
-num_enum = { workspace = true }
-scale-info = { workspace = true, optional = true, features = ["derive"] }
-serde = { workspace = true, optional = true }
-similar-asserts = { workspace = true, optional = true }
+impl-trait-for-tuples = { workspace = true, default-features = false }
+log = { workspace = true, default-features = false }
+num_enum = { workspace = true, default-features = false }
+scale-info = { workspace = true, optional = true, features = ["derive"], default-features = false }
+serde = { workspace = true, optional = true, default-features = false }
+similar-asserts = { workspace = true, optional = true, default-features = false }
 
 # Moonbeam
-precompile-utils-macro = { path = "macro" }
+precompile-utils-macro = { path = "macro", default-features = false }
 
 # Substrate
-frame-support = { workspace = true }
-frame-system = { workspace = true }
-scale-codec = { workspace = true }
-sp-core = { workspace = true }
-sp-io = { workspace = true }
-sp-runtime = { workspace = true }
-sp-weights = { workspace = true }
+frame-support = { workspace = true, default-features = false }
+frame-system = { workspace = true, default-features = false }
+scale-codec = { workspace = true, default-features = false }
+sp-core = { workspace = true, default-features = false }
+sp-io = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false }
+sp-weights = { workspace = true, default-features = false }
 
 # Frontier
-evm = { workspace = true, features = ["with-codec"] }
-fp-evm = { workspace = true }
-pallet-evm = { workspace = true, features = ["forbid-evm-reentrancy"] }
+evm = { workspace = true, features = ["with-codec"], default-features = false }
+fp-evm = { workspace = true, default-features = false }
+pallet-evm = { workspace = true, features = ["forbid-evm-reentrancy"], default-features = false }
 
 # Polkadot / XCM
-xcm = { workspace = true, optional = true }
+xcm = { workspace = true, optional = true, default-features = false }
 
 [dev-dependencies]
-hex-literal = { workspace = true }
-xcm = { workspace = true }
+hex-literal = { workspace = true, default-features = false }
+xcm = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]

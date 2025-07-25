@@ -11,16 +11,16 @@ repository = { workspace = true }
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-ethereum = { workspace = true, features = ["with-scale"] }
-ethereum-types = { workspace = true }
-scale-codec = { workspace = true }
+ethereum = { workspace = true, features = ["with-scale"], default-features = false }
+ethereum-types = { workspace = true, default-features = false }
+scale-codec = { workspace = true, default-features = false }
 
 # Substrate
-sc-client-api = { workspace = true }
-sp-api = { workspace = true }
-sp-io = { workspace = true }
-sp-runtime = { workspace = true }
-sp-storage = { workspace = true }
+sc-client-api = { workspace = true, default-features = false }
+sp-api = { workspace = true, default-features = false }
+sp-io = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false }
+sp-storage = { workspace = true, default-features = false }
 # Frontier
-fp-rpc = { workspace = true, features = ["default"] }
-fp-storage = { workspace = true, features = ["default"] }
+fp-rpc = { workspace = true, features = ["default"], default-features = false }
+fp-storage = { workspace = true, features = ["default"], default-features = false }

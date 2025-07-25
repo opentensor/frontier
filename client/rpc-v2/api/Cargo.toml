@@ -8,8 +8,8 @@ edition = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-ethereum-types = { workspace = true }
-jsonrpsee = { workspace = true, features = ["client-core", "server-core", "macros"] }
+ethereum-types = { workspace = true, default-features = false }
+jsonrpsee = { workspace = true, features = ["client-core", "server-core", "macros"], default-features = false }
 
 # Frontier
-fc-rpc-v2-types = { workspace = true }
+fc-rpc-v2-types = { workspace = true, default-features = false }

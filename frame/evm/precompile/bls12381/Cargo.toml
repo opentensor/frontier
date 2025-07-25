@@ -7,17 +7,17 @@ repository = { workspace = true }
 
 [dependencies]
 # Arkworks
-ark-bls12-381 = { workspace = true }
-ark-ec = { workspace = true }
-ark-ff = { workspace = true }
-ark-std = { workspace = true }
+ark-bls12-381 = { workspace = true, default-features = false }
+ark-ec = { workspace = true, default-features = false }
+ark-ff = { workspace = true, default-features = false }
+ark-std = { workspace = true, default-features = false }
 
 # Frontier
-fp-evm = { workspace = true }
+fp-evm = { workspace = true, default-features = false }
 
 [dev-dependencies]
 # Frontier
-pallet-evm-test-vector-support = { workspace = true }
+pallet-evm-test-vector-support = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]

@@ -9,10 +9,10 @@ repository = { workspace = true }
 
 [dependencies]
 # Frontier
-fp-evm = { workspace = true }
+fp-evm = { workspace = true, default-features = false }
 
 [dev-dependencies]
-pallet-evm-test-vector-support = { workspace = true }
+pallet-evm-test-vector-support = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]

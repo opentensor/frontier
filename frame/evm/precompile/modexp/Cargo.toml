@@ -8,14 +8,14 @@ edition = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-num = { workspace = true, features = ["alloc"] }
+num = { workspace = true, features = ["alloc"], default-features = false }
 # Frontier
-fp-evm = { workspace = true }
+fp-evm = { workspace = true, default-features = false }
 
 [dev-dependencies]
-hex = { workspace = true }
+hex = { workspace = true, default-features = false }
 # Frontier
-pallet-evm-test-vector-support = { workspace = true }
+pallet-evm-test-vector-support = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]

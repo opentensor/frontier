@@ -8,9 +8,9 @@ edition = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-tiny-keccak = { workspace = true, features = ["fips202"] }
+tiny-keccak = { workspace = true, features = ["fips202"], default-features = false }
 # Frontier
-fp-evm = { workspace = true }
+fp-evm = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]

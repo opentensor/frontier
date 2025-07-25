@@ -11,64 +11,64 @@ repository = { workspace = true }
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-ethereum = { workspace = true, features = ["with-scale"] }
-ethereum-types = { workspace = true }
-evm = { workspace = true }
-futures = { workspace = true }
-hex = { workspace = true }
-jsonrpsee = { workspace = true, features = ["server", "macros"] }
-libsecp256k1 = { workspace = true }
-log = { workspace = true }
-prometheus = { workspace = true }
-rand = { workspace = true }
-rlp = { workspace = true }
-serde = { workspace = true }
-scale-codec = { workspace = true }
-schnellru = { workspace = true }
-thiserror = { workspace = true }
-tokio = { workspace = true, features = ["sync"] }
+ethereum = { workspace = true, features = ["with-scale"], default-features = false }
+ethereum-types = { workspace = true, default-features = false }
+evm = { workspace = true, default-features = false }
+futures = { workspace = true, default-features = false }
+hex = { workspace = true, default-features = false }
+jsonrpsee = { workspace = true, features = ["server", "macros"], default-features = false }
+libsecp256k1 = { workspace = true, default-features = false }
+log = { workspace = true, default-features = false }
+prometheus = { workspace = true, default-features = false }
+rand = { workspace = true, default-features = false }
+rlp = { workspace = true, default-features = false }
+serde = { workspace = true, default-features = false }
+scale-codec = { workspace = true, default-features = false }
+schnellru = { workspace = true, default-features = false }
+thiserror = { workspace = true, default-features = false }
+tokio = { workspace = true, features = ["sync"], default-features = false }
 
 # Substrate
-prometheus-endpoint = { workspace = true }
-sc-client-api = { workspace = true }
-sc-network = { workspace = true }
-sc-network-sync = { workspace = true }
-sc-rpc = { workspace = true }
-sc-service = { workspace = true }
-sc-transaction-pool-api = { workspace = true }
-sc-utils = { workspace = true }
-sp-api = { workspace = true, features = ["default"] }
-sp-block-builder = { workspace = true, features = ["default"] }
-sp-blockchain = { workspace = true }
-sp-consensus = { workspace = true }
-sp-core = { workspace = true, features = ["default"] }
-sp-externalities = { workspace = true, features = ["default"] }
-sp-inherents = { workspace = true, features = ["default"] }
-sp-io = { workspace = true, features = ["default"] }
-sp-runtime = { workspace = true, features = ["default"] }
-sp-state-machine = { workspace = true, features = ["default"] }
-sp-storage = { workspace = true, features = ["default"] }
-sp-timestamp = { workspace = true, features = ["default"], optional = true }
-sp-trie = { workspace = true, features = ["default"] }
+prometheus-endpoint = { workspace = true, default-features = false }
+sc-client-api = { workspace = true, default-features = false }
+sc-network = { workspace = true, default-features = false }
+sc-network-sync = { workspace = true, default-features = false }
+sc-rpc = { workspace = true, default-features = false }
+sc-service = { workspace = true, default-features = false }
+sc-transaction-pool-api = { workspace = true, default-features = false }
+sc-utils = { workspace = true, default-features = false }
+sp-api = { workspace = true, features = ["default"], default-features = false }
+sp-block-builder = { workspace = true, features = ["default"], default-features = false }
+sp-blockchain = { workspace = true, default-features = false }
+sp-consensus = { workspace = true, default-features = false }
+sp-core = { workspace = true, features = ["default"], default-features = false }
+sp-externalities = { workspace = true, features = ["default"], default-features = false }
+sp-inherents = { workspace = true, features = ["default"], default-features = false }
+sp-io = { workspace = true, features = ["default"], default-features = false }
+sp-runtime = { workspace = true, features = ["default"], default-features = false }
+sp-state-machine = { workspace = true, features = ["default"], default-features = false }
+sp-storage = { workspace = true, features = ["default"], default-features = false }
+sp-timestamp = { workspace = true, features = ["default"], optional = true, default-features = false }
+sp-trie = { workspace = true, features = ["default"], default-features = false }
 # Frontier
-fc-api = { workspace = true }
-fc-mapping-sync = { workspace = true }
-fc-rpc-core = { workspace = true }
-fc-storage = { workspace = true }
-fp-evm = { workspace = true, features = ["default"] }
-fp-rpc = { workspace = true, features = ["default"] }
-fp-storage = { workspace = true, features = ["default"] }
-pallet-evm = { workspace = true, features = ["default"] }
+fc-api = { workspace = true, default-features = false }
+fc-mapping-sync = { workspace = true, default-features = false }
+fc-rpc-core = { workspace = true, default-features = false }
+fc-storage = { workspace = true, default-features = false }
+fp-evm = { workspace = true, features = ["default"], default-features = false }
+fp-rpc = { workspace = true, features = ["default"], default-features = false }
+fp-storage = { workspace = true, features = ["default"], default-features = false }
+pallet-evm = { workspace = true, features = ["default"], default-features = false }
 
 [dev-dependencies]
-tempfile = "3.20"
+tempfile = { version = "3.20", default-features = false }
 # Substrate
-sc-block-builder = { workspace = true }
-sc-client-db = { workspace = true, features = ["rocksdb"] }
-sp-consensus = { workspace = true }
-substrate-test-runtime-client = { workspace = true }
+sc-block-builder = { workspace = true, default-features = false }
+sc-client-db = { workspace = true, features = ["rocksdb"], default-features = false }
+sp-consensus = { workspace = true, default-features = false }
+substrate-test-runtime-client = { workspace = true, default-features = false }
 # Frontier
-fc-db = { workspace = true }
+fc-db = { workspace = true, default-features = false }
 
 [features]
 default = ["rocksdb"]

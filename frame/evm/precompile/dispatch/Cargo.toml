@@ -8,24 +8,24 @@ edition = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-scale-codec = { workspace = true }
+scale-codec = { workspace = true, default-features = false }
 # Substrate
-frame-support = { workspace = true }
-sp-runtime = { workspace = true }
+frame-support = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false }
 # Frontier
-fp-evm = { workspace = true }
-pallet-evm = { workspace = true }
+fp-evm = { workspace = true, default-features = false }
+pallet-evm = { workspace = true, default-features = false }
 
 [dev-dependencies]
-scale-info = { workspace = true }
+scale-info = { workspace = true, default-features = false }
 # Substrate
-frame-system = { workspace = true, features = ["default"] }
-pallet-balances = { workspace = true, features = ["default", "insecure_zero_ed"] }
-pallet-timestamp = { workspace = true, features = ["default"] }
-pallet-utility = { workspace = true, features = ["default"] }
-sp-core = { workspace = true, features = ["default"] }
-sp-io = { workspace = true, features = ["default"] }
-sp-runtime = { workspace = true, features = ["default"] }
+frame-system = { workspace = true, features = ["default"], default-features = false }
+pallet-balances = { workspace = true, features = ["default", "insecure_zero_ed"], default-features = false }
+pallet-timestamp = { workspace = true, features = ["default"], default-features = false }
+pallet-utility = { workspace = true, features = ["default"], default-features = false }
+sp-core = { workspace = true, features = ["default"], default-features = false }
+sp-io = { workspace = true, features = ["default"], default-features = false }
+sp-runtime = { workspace = true, features = ["default"], default-features = false }
 
 [features]
 default = ["std"]

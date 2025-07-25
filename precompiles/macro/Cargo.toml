@@ -13,19 +13,19 @@ name = "tests"
 path = "tests/tests.rs"
 
 [dependencies]
-case = { workspace = true }
-num_enum = { workspace = true }
-prettyplease = { workspace = true }
-proc-macro2 = { workspace = true }
-quote = { workspace = true }
-sp-crypto-hashing = { workspace = true }
-syn = { workspace = true }
+case = { workspace = true, default-features = false }
+num_enum = { workspace = true, default-features = false }
+prettyplease = { workspace = true, default-features = false }
+proc-macro2 = { workspace = true, default-features = false }
+quote = { workspace = true, default-features = false }
+sp-crypto-hashing = { workspace = true, default-features = false }
+syn = { workspace = true, default-features = false }
 
 [dev-dependencies]
-macrotest = "1.0.13"
-trybuild = "1.0"
+macrotest = { version = "1.0.13", default-features = false }
+trybuild = { version = "1.0", default-features = false }
 
-precompile-utils = { path = "../", features = ["testing"] }
+precompile-utils = { path = "../", features = ["testing"], default-features = false }
 
-fp-evm = { workspace = true }
-frame-support = { workspace = true }
+fp-evm = { workspace = true, default-features = false }
+frame-support = { workspace = true, default-features = false }

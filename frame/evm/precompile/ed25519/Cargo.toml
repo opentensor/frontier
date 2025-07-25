@@ -8,9 +8,9 @@ edition = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-ed25519-dalek = { workspace = true, features = ["alloc"] }
+ed25519-dalek = { workspace = true, features = ["alloc"], default-features = false }
 # Frontier
-fp-evm = { workspace = true }
+fp-evm = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]

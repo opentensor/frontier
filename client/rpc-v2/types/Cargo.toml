@@ -11,7 +11,7 @@ repository = { workspace = true }
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-const-hex = { workspace = true, features = ["serde"] }
-ethereum-types = { workspace = true, features = ["ethbloom", "serialize"] }
-serde = { workspace = true }
-serde_json = { workspace = true }
+const-hex = { workspace = true, features = ["serde"], default-features = false }
+ethereum-types = { workspace = true, features = ["ethbloom", "serialize"], default-features = false }
+serde = { workspace = true, default-features = false }
+serde_json = { workspace = true, default-features = false }

@@ -12,13 +12,13 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 # Substrate
-sc-client-api = { workspace = true }
-sc-consensus-aura = { workspace = true }
-sp-api = { workspace = true, features = ["default"] }
-sp-consensus-aura = { workspace = true, features = ["default"] }
-sp-inherents = { workspace = true, features = ["default"] }
-sp-runtime = { workspace = true, features = ["default"] }
-sp-timestamp = { workspace = true, features = ["default"] }
+sc-client-api = { workspace = true, default-features = false }
+sc-consensus-aura = { workspace = true, default-features = false }
+sp-api = { workspace = true, features = ["default"], default-features = false }
+sp-consensus-aura = { workspace = true, features = ["default"], default-features = false }
+sp-inherents = { workspace = true, features = ["default"], default-features = false }
+sp-runtime = { workspace = true, features = ["default"], default-features = false }
+sp-timestamp = { workspace = true, features = ["default"], default-features = false }
 # Frontier
-fc-rpc = { workspace = true }
-fp-storage = { workspace = true, features = ["default"] }
+fc-rpc = { workspace = true, default-features = false }
+fp-storage = { workspace = true, features = ["default"], default-features = false }

@@ -8,11 +8,11 @@ edition = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-evm = { workspace = true, features = ["with-codec"] }
-hex = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
+evm = { workspace = true, features = ["with-codec"], default-features = false }
+hex = { workspace = true, default-features = false }
+serde = { workspace = true, default-features = false }
+serde_json = { workspace = true, default-features = false }
 # Substrate
-sp-core = { workspace = true, features = ["default"] }
+sp-core = { workspace = true, features = ["default"], default-features = false }
 # Frontier
-fp-evm = { workspace = true, features = ["default"] }
+fp-evm = { workspace = true, features = ["default"], default-features = false }

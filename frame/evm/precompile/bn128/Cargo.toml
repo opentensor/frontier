@@ -8,15 +8,15 @@ edition = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-bn = { workspace = true }
+bn = { workspace = true, default-features = false }
 # Substrate
-sp-core = { workspace = true }
+sp-core = { workspace = true, default-features = false }
 # Frontier
-fp-evm = { workspace = true }
+fp-evm = { workspace = true, default-features = false }
 
 [dev-dependencies]
 # Frontier
-pallet-evm-test-vector-support = { workspace = true }
+pallet-evm-test-vector-support = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]
