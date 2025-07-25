@@ -2658,25 +2658,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethereum"
-version = "0.18.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ee371ebb7479ed3258617557ab0b3247e741075cb6b02b820d188f68da44441"
-dependencies = [
- "bytes",
- "ethereum-types",
- "hash-db",
- "hash256-std-hasher",
- "k256",
- "parity-scale-codec",
- "rlp",
- "scale-info",
- "serde",
- "sha3",
- "trie-root",
-]
-
-[[package]]
 name = "ethereum-types"
 version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2721,12 +2702,12 @@ dependencies = [
 
 [[package]]
 name = "evm"
-version = "0.43.4"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#d966171a50596a75c1039acd6cacee22b529e225"
+version = "0.42.0"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6ca5a72bc8942f4860137155dd9033526fd362a5"
 dependencies = [
  "auto_impl",
  "environmental",
- "ethereum 0.18.2",
+ "ethereum",
  "evm-core",
  "evm-gasometer",
  "evm-runtime",
@@ -2741,8 +2722,8 @@ dependencies = [
 
 [[package]]
 name = "evm-core"
-version = "0.43.0"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#d966171a50596a75c1039acd6cacee22b529e225"
+version = "0.42.0"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6ca5a72bc8942f4860137155dd9033526fd362a5"
 dependencies = [
  "parity-scale-codec",
  "primitive-types",
@@ -2752,8 +2733,8 @@ dependencies = [
 
 [[package]]
 name = "evm-gasometer"
-version = "0.43.0"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#d966171a50596a75c1039acd6cacee22b529e225"
+version = "0.42.0"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6ca5a72bc8942f4860137155dd9033526fd362a5"
 dependencies = [
  "environmental",
  "evm-core",
@@ -2763,8 +2744,8 @@ dependencies = [
 
 [[package]]
 name = "evm-runtime"
-version = "0.43.0"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#d966171a50596a75c1039acd6cacee22b529e225"
+version = "0.42.0"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6ca5a72bc8942f4860137155dd9033526fd362a5"
 dependencies = [
  "auto_impl",
  "environmental",
@@ -2927,7 +2908,7 @@ name = "fc-db"
 version = "2.0.0-dev"
 dependencies = [
  "async-trait",
- "ethereum 0.15.0",
+ "ethereum",
  "fc-api",
  "fc-storage",
  "fp-consensus",
@@ -2960,7 +2941,7 @@ dependencies = [
 name = "fc-mapping-sync"
 version = "2.0.0-dev"
 dependencies = [
- "ethereum 0.15.0",
+ "ethereum",
  "ethereum-types",
  "fc-db",
  "fc-storage",
@@ -2993,7 +2974,7 @@ dependencies = [
 name = "fc-rpc"
 version = "2.0.0-dev"
 dependencies = [
- "ethereum 0.15.0",
+ "ethereum",
  "ethereum-types",
  "evm",
  "fc-api",
@@ -3049,7 +3030,7 @@ dependencies = [
 name = "fc-rpc-core"
 version = "1.1.0-dev"
 dependencies = [
- "ethereum 0.15.0",
+ "ethereum",
  "ethereum-types",
  "jsonrpsee",
  "rlp",
@@ -3086,7 +3067,7 @@ dependencies = [
 name = "fc-storage"
 version = "1.0.0-dev"
 dependencies = [
- "ethereum 0.15.0",
+ "ethereum",
  "ethereum-types",
  "fp-rpc",
  "fp-storage",
@@ -3283,7 +3264,7 @@ dependencies = [
 name = "fp-consensus"
 version = "2.0.0-dev"
 dependencies = [
- "ethereum 0.15.0",
+ "ethereum",
  "parity-scale-codec",
  "sp-core",
  "sp-runtime",
@@ -3302,7 +3283,7 @@ dependencies = [
 name = "fp-ethereum"
 version = "1.0.0-dev"
 dependencies = [
- "ethereum 0.15.0",
+ "ethereum",
  "ethereum-types",
  "fp-evm",
  "frame-support",
@@ -3328,7 +3309,7 @@ dependencies = [
 name = "fp-rpc"
 version = "3.0.0-dev"
 dependencies = [
- "ethereum 0.15.0",
+ "ethereum",
  "ethereum-types",
  "fp-evm",
  "parity-scale-codec",
@@ -6941,7 +6922,7 @@ dependencies = [
 name = "pallet-ethereum"
 version = "4.0.0-dev"
 dependencies = [
- "ethereum 0.15.0",
+ "ethereum",
  "ethereum-types",
  "evm",
  "fp-consensus",
