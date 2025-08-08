@@ -132,6 +132,7 @@ where
 		&client,
 		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
+        None
 	)?;
 
 	let storage_override = Arc::new(StorageOverrideHandler::<B, _, _>::new(client.clone()));
@@ -351,7 +352,7 @@ where
 			Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
 				backend.clone(),
 				grandpa_link.shared_authority_set().clone(),
-				Vec::new(),
+			    sc_consensus_grandpa::warp_proof::HardForks::new_initial_set_id(0),
 			));
 		Some(WarpSyncConfig::WithProvider(warp_sync))
 	};
