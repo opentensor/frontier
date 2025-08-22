@@ -185,7 +185,6 @@ impl pallet_evm::Config for Test {
 
 	type BalanceConverter = SubtensorEvmBalanceConverter;
 
-	type RuntimeEvent = RuntimeEvent;
 	type PrecompilesType = ();
 	type PrecompilesValue = ();
 	type ChainId = ();
