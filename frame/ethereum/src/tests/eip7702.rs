@@ -179,7 +179,7 @@ fn eip7702_transaction_execution() {
 			U256::zero(),
 			U256::from(0x100000),
 			TransactionAction::Call(bob.address),
-			U256::from(1000),
+			U256::from(1_000_000_000_000u128),
 			vec![],
 			vec![authorization],
 		)
