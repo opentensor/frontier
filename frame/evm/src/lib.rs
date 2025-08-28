@@ -69,6 +69,7 @@ pub mod weights;
 
 use alloc::{borrow::Cow, collections::btree_map::BTreeMap, vec::Vec};
 use core::cmp::min;
+use ethereum::AuthorizationList;
 pub use evm::{
 	Config as EvmConfig, Context, ExitError, ExitFatal, ExitReason, ExitRevert, ExitSucceed,
 };
@@ -167,10 +168,6 @@ pub mod pallet {
 		#[pallet::no_default]
 		type Currency: Currency<AccountIdOf<Self>> + Inspect<AccountIdOf<Self>>;
 
-		/// The overarching event type.
-		#[pallet::no_default_bounds]
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
 		/// Precompiles associated with this EVM engine.
 		type PrecompilesType: PrecompileSet;
 		type PrecompilesValue: Get<Self::PrecompilesType>;
@@ -216,7 +213,7 @@ pub mod pallet {
 
 		/// EVM config used in the module.
 		fn config() -> &'static EvmConfig {
-			&CANCUN_CONFIG
+			&PECTRA_CONFIG
 		}
 	}
 
@@ -255,8 +252,6 @@ pub mod pallet {
 			type FeeCalculator = FixedGasPrice;
 			type GasWeightMapping = FixedGasWeightMapping<Self>;
 			type WeightPerGas = WeightPerGas;
-			#[inject_runtime_type]
-			type RuntimeEvent = ();
 			type PrecompilesType = ();
 			type PrecompilesValue = ();
 			type ChainId = ChainId;
@@ -335,6 +330,7 @@ pub mod pallet {
 			max_priority_fee_per_gas: Option<U256>,
 			nonce: Option<U256>,
 			access_list: Vec<(H160, Vec<H256>)>,
+			authorization_list: AuthorizationList,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
 
@@ -350,6 +346,7 @@ pub mod pallet {
 				max_priority_fee_per_gas,
 				nonce,
 				access_list,
+				authorization_list,
 				is_transactional,
 				validate,
 				None,
@@ -411,6 +408,7 @@ pub mod pallet {
 			max_priority_fee_per_gas: Option<U256>,
 			nonce: Option<U256>,
 			access_list: Vec<(H160, Vec<H256>)>,
+			authorization_list: AuthorizationList,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
 
@@ -429,6 +427,7 @@ pub mod pallet {
 				access_list,
 				whitelist,
 				whitelist_disabled,
+				authorization_list,
 				is_transactional,
 				validate,
 				None,
@@ -502,6 +501,7 @@ pub mod pallet {
 			max_priority_fee_per_gas: Option<U256>,
 			nonce: Option<U256>,
 			access_list: Vec<(H160, Vec<H256>)>,
+			authorization_list: AuthorizationList,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
 
@@ -521,6 +521,7 @@ pub mod pallet {
 				access_list,
 				whitelist,
 				whitelist_disabled,
+				authorization_list,
 				is_transactional,
 				validate,
 				None,
@@ -660,6 +661,8 @@ pub mod pallet {
 				TransactionValidationError::InvalidFeeInput => Error::<T>::GasPriceTooLow,
 				TransactionValidationError::InvalidChainId => Error::<T>::InvalidChainId,
 				TransactionValidationError::InvalidSignature => Error::<T>::InvalidSignature,
+				TransactionValidationError::EmptyAuthorizationList => Error::<T>::Undefined,
+				TransactionValidationError::AuthorizationListTooLarge => Error::<T>::Undefined,
 				TransactionValidationError::UnknownError => Error::<T>::Undefined,
 			}
 		}
@@ -754,7 +757,7 @@ pub struct CodeMetadata {
 }
 
 impl CodeMetadata {
-	fn from_code(code: &[u8]) -> Self {
+	pub fn from_code(code: &[u8]) -> Self {
 		let size = code.len() as u64;
 		let hash = H256::from(sp_io::hashing::keccak_256(code));
 
@@ -977,7 +980,7 @@ where
 	}
 }
 
-static CANCUN_CONFIG: EvmConfig = EvmConfig::cancun();
+static PECTRA_CONFIG: EvmConfig = EvmConfig::pectra();
 
 impl<T: Config> Pallet<T> {
 	/// Check whether an account is empty.
@@ -1001,10 +1004,8 @@ impl<T: Config> Pallet<T> {
 
 	/// Remove an account.
 	pub fn remove_account(address: &H160) {
-		if <AccountCodes<T>>::contains_key(address) {
-			let account_id = T::AddressMapping::into_account_id(*address);
-			T::AccountProvider::remove_account(&account_id);
-		}
+		let account_id = T::AddressMapping::into_account_id(*address);
+		T::AccountProvider::remove_account(&account_id);
 
 		<AccountCodes<T>>::remove(address);
 		<AccountCodesMetadata<T>>::remove(address);

@@ -23,6 +23,7 @@ use alloc::{
 	vec::Vec,
 };
 use core::{marker::PhantomData, mem};
+use ethereum::AuthorizationList;
 use evm::{
 	backend::Backend as BackendT,
 	executor::stack::{Accessed, StackExecutor, StackState as StackStateT, StackSubstateMetadata},
@@ -471,6 +472,7 @@ where
 		max_priority_fee_per_gas: Option<U256>,
 		nonce: Option<U256>,
 		access_list: Vec<(H160, Vec<H256>)>,
+		authorization_list: Vec<(U256, H160, U256, Option<H160>)>,
 		is_transactional: bool,
 		weight_limit: Option<Weight>,
 		proof_size_base_cost: Option<u64>,
@@ -499,6 +501,7 @@ where
 				max_priority_fee_per_gas,
 				value,
 				access_list,
+				authorization_list,
 			},
 			weight_limit,
 			proof_size_base_cost,
@@ -520,6 +523,7 @@ where
 		max_priority_fee_per_gas: Option<U256>,
 		nonce: Option<U256>,
 		access_list: Vec<(H160, Vec<H256>)>,
+		authorization_list: AuthorizationList,
 		is_transactional: bool,
 		validate: bool,
 		weight_limit: Option<Weight>,
@@ -527,6 +531,19 @@ where
 		config: &evm::Config,
 	) -> Result<CallInfo, RunnerError<Self::Error>> {
 		let measured_proof_size_before = get_proof_size().unwrap_or_default();
+
+		let authorization_list = authorization_list
+			.iter()
+			.map(|d| {
+				(
+					U256::from(d.chain_id),
+					d.address,
+					d.nonce,
+					d.authorizing_address().ok(),
+				)
+			})
+			.collect::<Vec<(U256, sp_core::H160, U256, Option<sp_core::H160>)>>();
+
 		if validate {
 			Self::validate(
 				source,
@@ -538,12 +555,14 @@ where
 				max_priority_fee_per_gas,
 				nonce,
 				access_list.clone(),
+				authorization_list.clone(),
 				is_transactional,
 				weight_limit,
 				proof_size_base_cost,
 				config,
 			)?;
 		}
+
 		let precompiles = T::PrecompilesValue::get();
 		Self::execute(
 			source,
@@ -557,7 +576,17 @@ where
 			weight_limit,
 			proof_size_base_cost,
 			measured_proof_size_before,
-			|executor| executor.transact_call(source, target, value, input, gas_limit, access_list),
+			|executor| {
+				executor.transact_call(
+					source,
+					target,
+					value,
+					input,
+					gas_limit,
+					access_list,
+					authorization_list,
+				)
+			},
 		)
 	}
 
@@ -572,6 +601,7 @@ where
 		access_list: Vec<(H160, Vec<H256>)>,
 		whitelist: Vec<H160>,
 		disable_whitelist_check: bool,
+		authorization_list: AuthorizationList,
 		is_transactional: bool,
 		validate: bool,
 		weight_limit: Option<Weight>,
@@ -583,6 +613,18 @@ where
 
 		T::CreateOriginFilter::check_create_origin(&source)
 			.map_err(|error| RunnerError { error, weight })?;
+
+		let authorization_list = authorization_list
+			.iter()
+			.map(|d| {
+				(
+					U256::from(d.chain_id),
+					d.address,
+					d.nonce,
+					d.authorizing_address().ok(),
+				)
+			})
+			.collect::<Vec<(U256, sp_core::H160, U256, Option<sp_core::H160>)>>();
 
 		if validate {
 			if !disable_whitelist_check && !whitelist.contains(&source) {
@@ -602,12 +644,14 @@ where
 				max_priority_fee_per_gas,
 				nonce,
 				access_list.clone(),
+				authorization_list.clone(),
 				is_transactional,
 				weight_limit,
 				proof_size_base_cost,
 				config,
 			)?;
 		}
+
 		let precompiles = T::PrecompilesValue::get();
 		Self::execute(
 			source,
@@ -624,8 +668,14 @@ where
 			|executor| {
 				let address = executor.create_address(evm::CreateScheme::Legacy { caller: source });
 				T::OnCreate::on_create(source, address);
-				let (reason, _) =
-					executor.transact_create(source, value, init, gas_limit, access_list);
+				let (reason, _) = executor.transact_create(
+					source,
+					value,
+					init,
+					gas_limit,
+					access_list,
+					authorization_list,
+				);
 				(reason, address)
 			},
 		)
@@ -643,6 +693,7 @@ where
 		access_list: Vec<(H160, Vec<H256>)>,
 		whitelist: Vec<H160>,
 		disable_whitelist_check: bool,
+		authorization_list: AuthorizationList,
 		is_transactional: bool,
 		validate: bool,
 		weight_limit: Option<Weight>,
@@ -654,6 +705,18 @@ where
 
 		T::CreateOriginFilter::check_create_origin(&source)
 			.map_err(|error| RunnerError { error, weight })?;
+
+		let authorization_list = authorization_list
+			.iter()
+			.map(|d| {
+				(
+					U256::from(d.chain_id),
+					d.address,
+					d.nonce,
+					d.authorizing_address().ok(),
+				)
+			})
+			.collect::<Vec<(U256, sp_core::H160, U256, Option<sp_core::H160>)>>();
 
 		if validate {
 			if !disable_whitelist_check && !whitelist.contains(&source) {
@@ -673,12 +736,14 @@ where
 				max_priority_fee_per_gas,
 				nonce,
 				access_list.clone(),
+				authorization_list.clone(),
 				is_transactional,
 				weight_limit,
 				proof_size_base_cost,
 				config,
 			)?;
 		}
+
 		let precompiles = T::PrecompilesValue::get();
 		let code_hash = H256::from(sp_io::hashing::keccak_256(&init));
 		Self::execute(
@@ -700,8 +765,15 @@ where
 					salt,
 				});
 				T::OnCreate::on_create(source, address);
-				let (reason, _) =
-					executor.transact_create2(source, value, init, salt, gas_limit, access_list);
+				let (reason, _) = executor.transact_create2(
+					source,
+					value,
+					init,
+					salt,
+					gas_limit,
+					access_list,
+					authorization_list,
+				);
 				(reason, address)
 			},
 		)
@@ -879,9 +951,45 @@ impl<'vicinity, 'config, T: Config> SubstrateStackState<'vicinity, 'config, T> {
 	pub fn info_mut(&mut self) -> (&mut Option<WeightInfo>, &mut Recorded) {
 		(&mut self.weight_info, &mut self.recorded)
 	}
+
+	fn record_address_code_read(
+		address: H160,
+		weight_info: &mut WeightInfo,
+		recorded: &mut Recorded,
+		create_contract_limit: u64,
+	) -> Result<(), ExitError> {
+		let maybe_record = !recorded.account_codes.contains(&address);
+		// Skip if the address has been already recorded this block
+		if maybe_record {
+			// First we record account emptiness check.
+			// Transfers to EOAs with standard 21_000 gas limit are able to
+			// pay for this pov size.
+			weight_info.try_record_proof_size_or_fail(IS_EMPTY_CHECK_PROOF_SIZE)?;
+			if <AccountCodes<T>>::decode_len(address).unwrap_or(0) == 0 {
+				return Ok(());
+			}
+
+			weight_info.try_record_proof_size_or_fail(ACCOUNT_CODES_METADATA_PROOF_SIZE)?;
+			if let Some(meta) = <AccountCodesMetadata<T>>::get(address) {
+				weight_info.try_record_proof_size_or_fail(meta.size)?;
+			} else {
+				weight_info.try_record_proof_size_or_fail(create_contract_limit)?;
+
+				let actual_size = Pallet::<T>::account_code_metadata(address).size;
+				if actual_size > create_contract_limit {
+					fp_evm::set_storage_oog();
+					return Err(ExitError::OutOfGas);
+				}
+				// Refund unused proof size
+				weight_info.refund_proof_size(create_contract_limit.saturating_sub(actual_size));
+			}
+			recorded.account_codes.push(address);
+		}
+		Ok(())
+	}
 }
 
-impl<'vicinity, 'config, T: Config> BackendT for SubstrateStackState<'vicinity, 'config, T>
+impl<T: Config> BackendT for SubstrateStackState<'_, '_, T>
 where
 	BalanceOf<T>: TryFrom<U256> + Into<U256>,
 {
@@ -973,8 +1081,7 @@ where
 	}
 }
 
-impl<'vicinity, 'config, T: Config> StackStateT<'config>
-	for SubstrateStackState<'vicinity, 'config, T>
+impl<'config, T: Config> StackStateT<'config> for SubstrateStackState<'_, 'config, T>
 where
 	BalanceOf<T>: TryFrom<U256> + Into<U256>,
 {
@@ -1156,37 +1263,7 @@ where
 					weight_info.try_record_proof_size_or_fail(ACCOUNT_BASIC_PROOF_SIZE)?
 				}
 				ExternalOperation::AddressCodeRead(address) => {
-					let maybe_record = !recorded.account_codes.contains(&address);
-					// Skip if the address has been already recorded this block
-					if maybe_record {
-						// First we record account emptiness check.
-						// Transfers to EOAs with standard 21_000 gas limit are able to
-						// pay for this pov size.
-						weight_info.try_record_proof_size_or_fail(IS_EMPTY_CHECK_PROOF_SIZE)?;
-						if <AccountCodes<T>>::decode_len(address).unwrap_or(0) == 0 {
-							return Ok(());
-						}
-
-						weight_info
-							.try_record_proof_size_or_fail(ACCOUNT_CODES_METADATA_PROOF_SIZE)?;
-						if let Some(meta) = <AccountCodesMetadata<T>>::get(address) {
-							weight_info.try_record_proof_size_or_fail(meta.size)?;
-						} else if let Some(remaining_proof_size) =
-							weight_info.remaining_proof_size()
-						{
-							let pre_size = remaining_proof_size.min(size_limit);
-							weight_info.try_record_proof_size_or_fail(pre_size)?;
-
-							let actual_size = Pallet::<T>::account_code_metadata(address).size;
-							if actual_size > pre_size {
-								fp_evm::set_storage_oog();
-								return Err(ExitError::OutOfGas);
-							}
-							// Refund unused proof size
-							weight_info.refund_proof_size(pre_size.saturating_sub(actual_size));
-						}
-						recorded.account_codes.push(address);
-					}
+					Self::record_address_code_read(address, weight_info, recorded, size_limit)?;
 				}
 				ExternalOperation::IsEmpty => {
 					weight_info.try_record_proof_size_or_fail(IS_EMPTY_CHECK_PROOF_SIZE)?
@@ -1203,6 +1280,9 @@ where
 							.record(storage_growth)
 							.map_err(|_| ExitError::OutOfGas)?;
 					}
+				}
+				ExternalOperation::DelegationResolution(address) => {
+					Self::record_address_code_read(address, weight_info, recorded, size_limit)?;
 				}
 			};
 		}
