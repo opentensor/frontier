@@ -3172,6 +3172,7 @@ dependencies = [
  "rustc-hex",
  "serde",
  "serde_json",
+ "sp-core",
  "sp-crypto-hashing 0.1.0 (git+https://github.com/opentensor/polkadot-sdk?rev=d6104ed4ff0bfc11759785497a9c73ca4f63564b)",
 ]
 
