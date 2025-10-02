@@ -352,7 +352,7 @@ where
 			Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
 				backend.clone(),
 				grandpa_link.shared_authority_set().clone(),
-                sc_consensus_grandpa::warp_proof::HardForks::new_initial_set_id(0),
+				sc_consensus_grandpa::warp_proof::HardForks::new_initial_set_id(0),
 			));
 		Some(WarpSyncConfig::WithProvider(warp_sync))
 	};
