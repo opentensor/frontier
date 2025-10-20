@@ -90,92 +90,92 @@ thiserror = "2.0"
 tokio = "1.45.0"
 
 # Substrate Client
-sc-basic-authorship = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-block-builder = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-chain-spec = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-cli = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sc-client-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-client-db = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sc-consensus = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-consensus-aura = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-consensus-babe = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-consensus-grandpa = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-consensus-manual-seal = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-executor = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-keystore = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-network = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-network-common = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-network-sync = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-offchain = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-rpc = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-rpc-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-service = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sc-telemetry = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-transaction-pool = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-transaction-pool-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-sc-utils = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
+sc-basic-authorship = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-block-builder = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-chain-spec = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-cli = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sc-client-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-client-db = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sc-consensus = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-consensus-aura = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-consensus-babe = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-consensus-grandpa = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-consensus-manual-seal = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-executor = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-keystore = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-network = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-network-common = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-network-sync = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-offchain = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-rpc = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-rpc-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-service = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sc-telemetry = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-transaction-pool = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-transaction-pool-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+sc-utils = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
 # Substrate Primitive
-sp-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-block-builder = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-blockchain = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-consensus = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-consensus-aura = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-consensus-babe = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-consensus-grandpa = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-core = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-crypto-hashing = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-database = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-externalities = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-genesis-builder = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-inherents = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-io = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-keyring = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-offchain = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-runtime = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-runtime-interface = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-session = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-state-machine = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-std = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-storage = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-timestamp = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-transaction-pool = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-trie = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-version = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-sp-weights = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
+sp-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-block-builder = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-blockchain = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-consensus = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-consensus-aura = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-consensus-babe = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-consensus-grandpa = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-core = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-crypto-hashing = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-database = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-externalities = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-genesis-builder = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-inherents = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-io = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-keyring = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-offchain = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-runtime = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-runtime-interface = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-session = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-state-machine = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-std = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-storage = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-timestamp = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-transaction-pool = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-trie = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-version = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+sp-weights = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
 # Substrate FRAME
-frame-benchmarking = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-frame-executive = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-frame-support = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-frame-system = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-frame-system-benchmarking = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-frame-system-rpc-runtime-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-pallet-aura = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-pallet-balances = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-pallet-grandpa = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-pallet-sudo = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-pallet-timestamp = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-pallet-transaction-payment = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-pallet-transaction-payment-rpc = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-pallet-utility = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
+frame-benchmarking = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+frame-executive = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+frame-support = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+frame-system = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+frame-system-benchmarking = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+frame-system-rpc-runtime-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+pallet-aura = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+pallet-balances = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+pallet-grandpa = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+pallet-sudo = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+pallet-timestamp = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+pallet-transaction-payment = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+pallet-transaction-payment-rpc = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+pallet-utility = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
 # Substrate Utility
-frame-benchmarking-cli = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-prometheus-endpoint = { package = "substrate-prometheus-endpoint", git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-substrate-build-script-utils = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-substrate-frame-rpc-system = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-substrate-test-runtime-client = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
-substrate-wasm-builder = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09" }
+frame-benchmarking-cli = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+prometheus-endpoint = { package = "substrate-prometheus-endpoint", git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+substrate-build-script-utils = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+substrate-frame-rpc-system = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+substrate-test-runtime-client = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
+substrate-wasm-builder = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b" }
 
 # Polkadot
-polkadot-runtime-common = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
+polkadot-runtime-common = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
 
 # Cumulus primitives
-cumulus-pallet-weight-reclaim = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-cumulus-primitives-proof-size-hostfunction = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
-cumulus-primitives-storage-weight-reclaim = { git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
+cumulus-pallet-weight-reclaim = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+cumulus-primitives-proof-size-hostfunction = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
+cumulus-primitives-storage-weight-reclaim = { git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
 
 # XCM
-xcm = { package = "staging-xcm", git = "https://github.com/opentensor/polkadot-sdk", rev = "64805f5a0a8e1bae6660739fbbfe60712ac22a09", default-features = false }
+xcm = { package = "staging-xcm", git = "https://github.com/opentensor/polkadot-sdk", rev = "95621a5a3e5caa7dcf29ff44ea3a07346797b15b", default-features = false }
 
 # Arkworks
 ark-bls12-377 = { version = "0.4.0", default-features = false, features = ["curve"] }
