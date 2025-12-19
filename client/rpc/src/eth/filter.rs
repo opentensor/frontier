@@ -555,7 +555,7 @@ where
 		_ => vec![],
 	};
 	let topics = filter
-		.topics
+		.topics()
 		.iter()
 		.map(|flat| match flat {
 			VariadicValue::Single(item) => vec![*item],
@@ -685,7 +685,7 @@ where
 
 	// Pre-calculate BloomInput for reuse.
 	let address_bloom_filter = FilteredParams::address_bloom_filter(&filter.address);
-	let topics_bloom_filter = FilteredParams::topics_bloom_filter(&filter.topics);
+	let topics_bloom_filter = FilteredParams::topics_bloom_filter(&filter.topics());
 
 	let mut logs = Vec::new();
 	while current_number <= to {
@@ -757,7 +757,7 @@ pub(crate) fn filter_block_logs(
 				removed: false,
 			};
 
-			let topics_match = filter.topics.is_empty() || params.filter_topics(&log.topics);
+			let topics_match = filter.topics().is_empty() || params.filter_topics(&log.topics);
 			let address_match = filter
 				.address
 				.as_ref()
