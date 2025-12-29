@@ -79,7 +79,7 @@ log = { version = "0.4.27", default-features = false }
 num_enum = { version = "0.7.3", default-features = false }
 parity-db = "0.4.13"
 parking_lot = "0.12.3"
-proc-macro2 = "1.0.86"
+proc-macro2 = "1.0.104"
 quote = "1.0.38"
 rlp = { version = "0.6", default-features = false }
 scale-codec = { package = "parity-scale-codec", version = "3.7.5", default-features = false, features = ["derive"] }
@@ -88,7 +88,7 @@ serde = { version = "1.0", default-features = false, features = ["derive", "allo
 serde_json = { version = "1.0", default-features = false }
 sha2 = { version = "0.10.9", default-features = false }
 similar-asserts = "1.7.0"
-sqlx = { version = "0.8.2", default-features = false, features = ["macros"] }
+sqlx = { version = "0.8.6", default-features = false, features = ["macros"] }
 syn = "2.0.87"
 thiserror = "2.0"
 tokio = { version = "1.45.0", default-features = false }
@@ -187,7 +187,7 @@ ark-bls12-381 = { version = "0.4.0", default-features = false, features = ["curv
 ark-bw6-761 = { version = "0.4.0", default-features = false }
 ark-ec = { version = "0.4.0", default-features = false }
 ark-ff = { version = "0.4.0", default-features = false }
-ark-std = { version = "0.4.0", default-features = false }
+ark-std = { version = "0.5.0", default-features = false }
 
 # Frontier Client
 fc-api = { path = "client/api" }
