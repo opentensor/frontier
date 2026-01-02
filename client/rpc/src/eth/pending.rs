@@ -65,6 +65,7 @@ where
 		since the AllowMultipleBlocksPerSlot set as false in the runtime..
 		https://github.com/opentensor/subtensor/issues/2303
 
+		let (best_number, best_hash) = (info.best_number, info.best_hash);
 		let inherent_data_provider = self
 			.pending_create_inherent_data_providers
 			.create_inherent_data_providers(best_hash, ())
