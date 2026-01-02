@@ -18,21 +18,15 @@
 
 // Substrate
 use sc_client_api::backend::{Backend, StorageProvider};
-use sc_transaction_pool_api::{InPoolTransaction, TransactionPool};
-use sp_api::{ApiExt, ApiRef, Core, ProvideRuntimeApi};
+use sc_transaction_pool_api::TransactionPool;
+use sp_api::{ApiRef, ProvideRuntimeApi};
 use sp_block_builder::BlockBuilder as BlockBuilderApi;
 use sp_blockchain::{ApplyExtrinsicFailed, HeaderBackend};
-use sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider};
-use sp_runtime::{
-	generic::Digest,
-	traits::{Block as BlockT, Header as HeaderT, One},
-	TransactionOutcome,
-};
+use sp_inherents::{CreateInherentDataProviders, InherentData};
+use sp_runtime::{generic::Digest, traits::Block as BlockT};
 
 use crate::eth::Eth;
 use fp_rpc::EthereumRuntimeRPCApi;
-
-const LOG_TARGET: &str = "eth-pending";
 
 /// The generated error type for creating pending runtime api.
 #[derive(Debug, thiserror::Error)]
@@ -65,7 +59,11 @@ where
 		let api = self.client.runtime_api();
 
 		let info = self.client.info();
-		let (best_number, best_hash) = (info.best_number, info.best_hash);
+
+		/* It is a workaround to avoid using the pending block.
+		In subtensor, Aura pallet can not initialize with the same slot number
+		since the AllowMultipleBlocksPerSlot set as false in the runtime..
+		https://github.com/opentensor/subtensor/issues/2303
 
 		let inherent_data_provider = self
 			.pending_create_inherent_data_providers
@@ -135,9 +133,9 @@ where
 				)),
 				Err(err) => TransactionOutcome::Rollback(Err(Error::from(err))),
 			});
-		}
+		}*/
 
-		Ok((best_hash, api))
+		Ok((info.best_hash, api))
 	}
 }
 
