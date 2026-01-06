@@ -17,6 +17,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #![warn(unused_crate_dependencies)]
+#![allow(clippy::result_large_err)]
 
 mod frontier_db_cmd;
 

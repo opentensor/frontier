@@ -624,10 +624,7 @@ fn transaction_build(
 	status: Option<&TransactionStatus>,
 	base_fee: Option<U256>,
 ) -> Transaction {
-	let pubkey = match public_key(ethereum_transaction) {
-		Ok(p) => Some(p),
-		Err(_) => None,
-	};
+	let pubkey = public_key(ethereum_transaction).ok();
 	let from = status.map_or(
 		{
 			match pubkey {
