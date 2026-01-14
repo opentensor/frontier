@@ -1504,9 +1504,7 @@ impl BalanceConverter for () {
 				Some(EvmBalance::new(evm_value))
 			} else {
 				// Log value too large
-				log::debug!(
-                    "SubtensorEvmBalanceConverter::into_evm_balance( {value:?} ) larger than U256::MAX"
-                );
+				log::debug!("SubtensorEvmBalanceConverter::into_evm_balance( {value:?} ) larger than U256::MAX");
 				None
 			}
 		} else {
@@ -1525,9 +1523,7 @@ impl BalanceConverter for () {
 				Some(SubstrateBalance::new(substrate_value))
 			} else {
 				// Log value too large
-				log::debug!(
-                    "SubtensorEvmBalanceConverter::into_substrate_balance( {value:?} ) larger than u64::MAX"
-                );
+				log::debug!("SubtensorEvmBalanceConverter::into_substrate_balance( {value:?} ) larger than u64::MAX");
 				None
 			}
 		} else {
