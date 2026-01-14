@@ -80,7 +80,7 @@ export async function startFrontierNode(
 		chainId: CHAIN_ID,
 		name: "frontier-dev",
 	});
-	
+
 	const wsProvider = new WsProvider(`ws://127.0.0.1:${RPC_PORT}`);
 	const api = await ApiPromise.create({ provider: wsProvider, noInitWarn: true });
 
