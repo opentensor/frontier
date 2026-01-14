@@ -34,10 +34,7 @@ use sp_runtime::{
 };
 // Frontier
 use fp_evm::{ExitReason, ExitRevert, PrecompileFailure, PrecompileHandle};
-use pallet_evm::{
-	BalanceConverter, CodeMetadata, EnsureAddressNever, EnsureAddressRoot, EvmBalance,
-	SubstrateBalance,
-};
+use pallet_evm::{CodeMetadata, EnsureAddressNever, EnsureAddressRoot};
 use precompile_utils::{
 	precompile_set::*,
 	solidity::{codec::Writer, revert::revert},
@@ -249,43 +246,8 @@ parameter_types! {
 	};
 }
 
-const EVM_DECIMALS_FACTOR: u64 = 1_000_000_000_u64;
-pub struct SubtensorEvmBalanceConverter;
-
-impl BalanceConverter for SubtensorEvmBalanceConverter {
-	/// Convert from Substrate balance (u64) to EVM balance (U256)
-	fn into_evm_balance(value: SubstrateBalance) -> Option<EvmBalance> {
-		value
-			.into_u256()
-			.checked_mul(U256::from(EVM_DECIMALS_FACTOR))
-			.and_then(|evm_value| {
-				// Ensure the result fits within the maximum U256 value
-				if evm_value <= U256::MAX {
-					Some(EvmBalance::new(evm_value))
-				} else {
-					None
-				}
-			})
-	}
-
-	/// Convert from EVM balance (U256) to Substrate balance (u64)
-	fn into_substrate_balance(value: EvmBalance) -> Option<SubstrateBalance> {
-		value
-			.into_u256()
-			.checked_div(U256::from(EVM_DECIMALS_FACTOR))
-			.and_then(|substrate_value| {
-				// Ensure the result fits within the TAO balance type (u64)
-				if substrate_value <= U256::from(u64::MAX) {
-					Some(SubstrateBalance::new(substrate_value))
-				} else {
-					None
-				}
-			})
-	}
-}
-
 impl pallet_evm::Config for Runtime {
-	type BalanceConverter = SubtensorEvmBalanceConverter;
+	type BalanceConverter = ();
 	type AccountProvider = pallet_evm::FrameSystemAccountProvider<Self>;
 	type FeeCalculator = ();
 	type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
