@@ -165,7 +165,7 @@ fn eip7702_happy_path() {
 			U256::from(1), // nonce 1 (after contract deployment)
 			U256::from(0x100000),
 			TransactionAction::Call(bob.address),
-			U256::from(1000),
+			U256::from(1000e9 as u128),
 			vec![],
 			vec![authorization],
 		)
