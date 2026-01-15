@@ -69,6 +69,7 @@ export async function startFrontierNode(
 	ethersjs: ethers.JsonRpcProvider;
 	api: ApiPromise;
 }> {
+	let api: ApiPromise;
 	let web3;
 	if (!provider || provider == "http") {
 		web3 = new Web3(`http://127.0.0.1:${RPC_PORT}`);
@@ -82,11 +83,11 @@ export async function startFrontierNode(
 	});
 
 	const wsProvider = new WsProvider(`ws://127.0.0.1:${RPC_PORT}`);
-	const api = await ApiPromise.create({ provider: wsProvider, noInitWarn: true });
 
 	const attachOnExisting = process.env.FRONTIER_ATTACH || false;
 	if (attachOnExisting) {
 		try {
+			api = await ApiPromise.create({ provider: wsProvider, noInitWarn: true });
 			// Return with a fake binary object to maintain API compatibility
 			return { web3, ethersjs, binary: null as any, api };
 		} catch (_error) {
@@ -141,6 +142,8 @@ export async function startFrontierNode(
 			}
 			binaryLogs.push(chunk);
 			if (chunk.toString().match(/Manual Seal Ready/)) {
+				api = await ApiPromise.create({ provider: wsProvider, noInitWarn: true });
+
 				if (!provider || provider == "http") {
 					// This is needed as the EVM runtime needs to warmup with a first call
 					await web3.eth.getChainId();
