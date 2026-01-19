@@ -75,7 +75,7 @@ pub use evm::{
 };
 use hash_db::Hasher;
 use impl_trait_for_tuples::impl_for_tuples;
-use scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 // Substrate
 use frame_support::{
@@ -748,6 +748,7 @@ type NegativeImbalanceOf<C, T> = <C as Currency<AccountIdOf<T>>>::NegativeImbala
 	PartialEq,
 	Encode,
 	Decode,
+	DecodeWithMemTracking,
 	TypeInfo,
 	MaxEncodedLen
 )]
@@ -1010,6 +1011,12 @@ impl<T: Config> Pallet<T> {
 		<AccountCodes<T>>::remove(address);
 		<AccountCodesMetadata<T>>::remove(address);
 		let _ = <AccountStorages<T>>::clear_prefix(address, u32::MAX, None);
+	}
+
+	/// Remove an account's code if present.
+	pub fn remove_account_code(address: &H160) {
+		<AccountCodes<T>>::remove(address);
+		<AccountCodesMetadata<T>>::remove(address);
 	}
 
 	/// Create an account.
@@ -1482,14 +1489,49 @@ pub trait BalanceConverter {
 	fn into_substrate_balance(value: EvmBalance) -> Option<SubstrateBalance>;
 }
 
+/// The difference between EVM decimals and Substrate decimals.
+/// Substrate balances has 9 decimals, while EVM has 18, so the
+/// difference factor is 9 decimals, or 10^9
+const EVM_TO_SUBSTRATE_DECIMALS: u64 = 1_000_000_000_u64;
+
 impl BalanceConverter for () {
+	/// Convert from Substrate balance (u64) to EVM balance (U256)
 	fn into_evm_balance(value: SubstrateBalance) -> Option<EvmBalance> {
-		Some(EvmBalance::from(
-			UniqueSaturatedInto::<u128>::unique_saturated_into(value.0),
-		))
+		let value = value.into_u256();
+		if let Some(evm_value) = value.checked_mul(U256::from(EVM_TO_SUBSTRATE_DECIMALS)) {
+			// Ensure the result fits within the maximum U256 value
+			if evm_value <= U256::MAX {
+				Some(EvmBalance::new(evm_value))
+			} else {
+				// Log value too large
+				log::debug!("SubtensorEvmBalanceConverter::into_evm_balance( {value:?} ) larger than U256::MAX");
+				None
+			}
+		} else {
+			// Log overflow
+			log::debug!("SubtensorEvmBalanceConverter::into_evm_balance( {value:?} ) overflow");
+			None
+		}
 	}
 
+	/// Convert from EVM balance (U256) to Substrate balance (u64)
 	fn into_substrate_balance(value: EvmBalance) -> Option<SubstrateBalance> {
-		Some(SubstrateBalance(value.0))
+		let value = value.into_u256();
+		if let Some(substrate_value) = value.checked_div(U256::from(EVM_TO_SUBSTRATE_DECIMALS)) {
+			// Ensure the result fits within the TAO balance type (u64)
+			if substrate_value <= U256::from(u64::MAX) {
+				Some(SubstrateBalance::new(substrate_value))
+			} else {
+				// Log value too large
+				log::debug!("SubtensorEvmBalanceConverter::into_substrate_balance( {value:?} ) larger than u64::MAX");
+				None
+			}
+		} else {
+			// Log overflow
+			log::debug!(
+				"SubtensorEvmBalanceConverter::into_substrate_balance( {value:?} ) overflow"
+			);
+			None
+		}
 	}
 }

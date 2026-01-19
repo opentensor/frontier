@@ -222,11 +222,25 @@ where
 		//
 		// EIP-3607: https://eips.ethereum.org/EIPS/eip-3607
 		// Do not allow transactions for which `tx.sender` has any code deployed.
-		if is_transactional && !<AccountCodes<T>>::get(source).is_empty() {
-			return Err(RunnerError {
-				error: Error::<T>::TransactionMustComeFromEOA,
-				weight,
-			});
+		// Exception: Allow transactions from EOAs whose code is a valid delegation indicator (0xef0100 || address).
+		if is_transactional {
+			// Check if the account has code deployed
+			if let Some(metadata) = <AccountCodesMetadata<T>>::get(source) {
+				if metadata.size > 0 {
+					// Account has code, check if it's a valid delegation
+					let is_delegation = metadata.size
+						== evm::delegation::EIP_7702_DELEGATION_SIZE as u64
+						&& <AccountCodes<T>>::get(source)
+							.starts_with(evm::delegation::EIP_7702_DELEGATION_PREFIX);
+
+					if !is_delegation {
+						return Err(RunnerError {
+							error: Error::<T>::TransactionMustComeFromEOA,
+							weight,
+						});
+					}
+				}
+			}
 		}
 
 		let total_fee_per_gas = if is_transactional {
@@ -778,6 +792,97 @@ where
 			},
 		)
 	}
+
+	fn create_force_address(
+		source: H160,
+		init: Vec<u8>,
+		value: U256,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+		nonce: Option<U256>,
+		access_list: Vec<(H160, Vec<H256>)>,
+		whitelist: Vec<H160>,
+		disable_whitelist_check: bool,
+		authorization_list: AuthorizationList,
+		is_transactional: bool,
+		validate: bool,
+		weight_limit: Option<Weight>,
+		proof_size_base_cost: Option<u64>,
+		config: &evm::Config,
+		contract_address: H160,
+	) -> Result<CreateInfo, RunnerError<Self::Error>> {
+		let measured_proof_size_before = get_proof_size().unwrap_or_default();
+		let (_, weight) = T::FeeCalculator::min_gas_price();
+
+		T::CreateOriginFilter::check_create_origin(&source)
+			.map_err(|error| RunnerError { error, weight })?;
+
+		let authorization_list = authorization_list
+			.iter()
+			.map(|d| {
+				(
+					U256::from(d.chain_id),
+					d.address,
+					d.nonce,
+					d.authorizing_address().ok(),
+				)
+			})
+			.collect::<Vec<(U256, sp_core::H160, U256, Option<sp_core::H160>)>>();
+
+		if validate {
+			if !disable_whitelist_check && !whitelist.contains(&source) {
+				return Err(RunnerError {
+					error: Error::<T>::NotAllowed,
+					weight: Weight::zero(),
+				});
+			}
+
+			Self::validate(
+				source,
+				None,
+				init.clone(),
+				value,
+				gas_limit,
+				max_fee_per_gas,
+				max_priority_fee_per_gas,
+				nonce,
+				access_list.clone(),
+				authorization_list.clone(),
+				is_transactional,
+				weight_limit,
+				proof_size_base_cost,
+				config,
+			)?;
+		}
+		let precompiles = T::PrecompilesValue::get();
+		Self::execute(
+			source,
+			value,
+			gas_limit,
+			max_fee_per_gas,
+			max_priority_fee_per_gas,
+			config,
+			&precompiles,
+			is_transactional,
+			weight_limit,
+			proof_size_base_cost,
+			measured_proof_size_before,
+			|executor| {
+				T::OnCreate::on_create(source, contract_address);
+				let (reason, _) = executor.transact_create_force_address(
+					source,
+					value,
+					init,
+					gas_limit,
+					access_list,
+					authorization_list,
+					contract_address,
+				);
+				(reason, contract_address)
+			},
+		)
+	}
 }
 
 struct SubstrateStackSubstate<'config> {
@@ -1193,7 +1298,36 @@ where
 			code.len(),
 			address
 		);
+
 		Pallet::<T>::create_account(address, code, caller)
+	}
+
+	fn set_delegation(
+		&mut self,
+		authority: H160,
+		delegation: evm::delegation::Delegation,
+	) -> Result<(), ExitError> {
+		log::debug!(
+			target: "evm",
+			"Inserting delegation (23 bytes) at {:?}",
+			delegation.address()
+		);
+
+		let meta = crate::CodeMetadata::from_code(&delegation.to_bytes());
+		<AccountCodesMetadata<T>>::insert(authority, meta);
+		<AccountCodes<T>>::insert(authority, delegation.to_bytes());
+		Ok(())
+	}
+
+	fn reset_delegation(&mut self, address: H160) -> Result<(), ExitError> {
+		log::debug!(
+			target: "evm",
+			"Resetting delegation at {:?}",
+			address
+		);
+
+		Pallet::<T>::remove_account_code(&address);
+		Ok(())
 	}
 
 	fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
@@ -1241,10 +1375,14 @@ where
 	}
 
 	fn code_size(&self, address: H160) -> U256 {
+		// EIP-7702: EXTCODESIZE does NOT follow delegations
+		// Return the actual code size at the address, including delegation designators
 		U256::from(<Pallet<T>>::account_code_metadata(address).size)
 	}
 
 	fn code_hash(&self, address: H160) -> H256 {
+		// EIP-7702: EXTCODEHASH does NOT follow delegations
+		// Return the hash of the actual code at the address, including delegation designators
 		<Pallet<T>>::account_code_metadata(address).hash
 	}
 

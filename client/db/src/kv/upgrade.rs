@@ -211,7 +211,7 @@ pub(crate) fn migrate_1_to_2_rocks_db<Block: BlockT, C: HeaderBackend<Block>>(
 			}
 		}
 		db.write(transaction)
-			.map_err(|_| io::Error::new(ErrorKind::Other, "Failed to commit on migrate_1_to_2"))?;
+			.map_err(|_| io::Error::other("Failed to commit on migrate_1_to_2"))?;
 		log::debug!(
 			target: "fc-db-upgrade",
 			"🔨 Success {}, error {}.",
@@ -265,7 +265,7 @@ pub(crate) fn migrate_1_to_2_parity_db<Block: BlockT, C: HeaderBackend<Block>>(
 		for ethereum_hash in ethereum_hashes {
 			let mut maybe_error = true;
 			if let Some(substrate_hash) = db.get(super::columns::BLOCK_MAPPING as u8, ethereum_hash).map_err(|_|
-				io::Error::new(ErrorKind::Other, "Key does not exist")
+				io::Error::other("Key does not exist")
 			)? {
 				// Only update version1 data
 				let decoded = Vec::<Block::Hash>::decode(&mut &substrate_hash[..]);
@@ -289,7 +289,7 @@ pub(crate) fn migrate_1_to_2_parity_db<Block: BlockT, C: HeaderBackend<Block>>(
 			}
 		}
 		db.commit(transaction)
-			.map_err(|_| io::Error::new(ErrorKind::Other, "Failed to commit on migrate_1_to_2"))?;
+			.map_err(|_| io::Error::other("Failed to commit on migrate_1_to_2"))?;
 		Ok(())
 	};
 
@@ -297,7 +297,7 @@ pub(crate) fn migrate_1_to_2_parity_db<Block: BlockT, C: HeaderBackend<Block>>(
 	db_cfg.columns[super::columns::BLOCK_MAPPING as usize].btree_index = true;
 
 	let db = parity_db::Db::open_or_create(&db_cfg)
-		.map_err(|_| io::Error::new(ErrorKind::Other, "Failed to open db"))?;
+		.map_err(|_| io::Error::other("Failed to open db"))?;
 
 	// Get all the block hashes we need to update
 	let ethereum_hashes: Vec<_> = match db.iter(super::columns::BLOCK_MAPPING as u8) {

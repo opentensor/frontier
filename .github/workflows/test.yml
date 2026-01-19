@@ -9,6 +9,8 @@ on:
     branches:
       - master
       - 'polkadot-v**'
+  merge_group:
+    branches: master
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,10 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Cache cargo registry & git sources
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/bin/
@@ -59,10 +61,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Cache cargo registry & git sources
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/bin/
@@ -89,7 +91,7 @@ jobs:
         run: make build-release
 
       - name: Setup node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 18
 

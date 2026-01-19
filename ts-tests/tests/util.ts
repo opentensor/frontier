@@ -69,9 +69,30 @@ export async function startFrontierNode(
 	ethersjs: ethers.JsonRpcProvider;
 	api: ApiPromise;
 }> {
-	var web3;
+	let api: ApiPromise;
+	let web3;
 	if (!provider || provider == "http") {
 		web3 = new Web3(`http://127.0.0.1:${RPC_PORT}`);
+	} else if (provider == "ws") {
+		web3 = new Web3(`ws://127.0.0.1:${RPC_PORT}`);
+	}
+
+	const ethersjs = new ethers.JsonRpcProvider(`http://127.0.0.1:${RPC_PORT}`, {
+		chainId: CHAIN_ID,
+		name: "frontier-dev",
+	});
+
+	const wsProvider = new WsProvider(`ws://127.0.0.1:${RPC_PORT}`);
+
+	const attachOnExisting = process.env.FRONTIER_ATTACH || false;
+	if (attachOnExisting) {
+		try {
+			api = await ApiPromise.create({ provider: wsProvider, noInitWarn: true });
+			// Return with a fake binary object to maintain API compatibility
+			return { web3, ethersjs, binary: null as any, api };
+		} catch (_error) {
+			console.log(`\x1b[33mNo existing node found, starting new one...\x1b[0m`);
+		}
 	}
 
 	const cmd = BINARY_PATH;
@@ -121,6 +142,8 @@ export async function startFrontierNode(
 			}
 			binaryLogs.push(chunk);
 			if (chunk.toString().match(/Manual Seal Ready/)) {
+				api = await ApiPromise.create({ provider: wsProvider, noInitWarn: true });
+
 				if (!provider || provider == "http") {
 					// This is needed as the EVM runtime needs to warmup with a first call
 					await web3.eth.getChainId();
@@ -142,14 +165,6 @@ export async function startFrontierNode(
 	if (provider == "ws") {
 		web3 = new Web3(`ws://127.0.0.1:${RPC_PORT}`);
 	}
-
-	let ethersjs = new ethers.JsonRpcProvider(`http://127.0.0.1:${RPC_PORT}`, {
-		chainId: CHAIN_ID,
-		name: "frontier-dev",
-	});
-
-	const wsProvider = new WsProvider(`ws://127.0.0.1:${RPC_PORT}`);
-	const api = await ApiPromise.create({ provider: wsProvider, noInitWarn: true });
 
 	return { web3, binary, ethersjs, api };
 }
@@ -180,7 +195,9 @@ export function describeWithFrontier(
 		after(async function () {
 			//console.log(`\x1b[31m Killing RPC\x1b[0m`);
 			await context.api.disconnect();
-			binary.kill();
+			if (binary) {
+				binary.kill();
+			}
 		});
 
 		cb(context);

@@ -21,9 +21,8 @@ use frame_support::{derive_impl, parameter_types, weights::Weight};
 use sp_core::{H160, U256};
 
 use crate::{
-	BalanceConverter, EnsureAddressNever, EnsureAddressRoot, EnsureAllowedCreateAddress,
-	EvmBalance, FeeCalculator, IsPrecompileResult, Precompile, PrecompileHandle, PrecompileResult,
-	PrecompileSet, SubstrateBalance,
+	EnsureAddressNever, EnsureAddressRoot, EnsureAllowedCreateAddress, FeeCalculator,
+	IsPrecompileResult, Precompile, PrecompileHandle, PrecompileResult, PrecompileSet,
 };
 
 frame_support::construct_runtime! {
@@ -70,7 +69,7 @@ parameter_types! {
 
 #[derive_impl(crate::config_preludes::TestDefaultConfig)]
 impl crate::Config for Test {
-	type BalanceConverter = SubtensorEvmBalanceConverter;
+	type BalanceConverter = ();
 	type AccountProvider = crate::FrameSystemAccountProvider<Self>;
 	type FeeCalculator = FixedGasPrice;
 	type BlockHashMapping = crate::SubstrateBlockHashMapping<Self>;
@@ -90,41 +89,6 @@ impl FeeCalculator for FixedGasPrice {
 	fn min_gas_price() -> (U256, Weight) {
 		// Return some meaningful gas price and weight
 		(1_000_000_000u128.into(), Weight::from_parts(7u64, 0))
-	}
-}
-
-const EVM_DECIMALS_FACTOR: u64 = 1_000_000_000_u64;
-pub struct SubtensorEvmBalanceConverter;
-
-impl BalanceConverter for SubtensorEvmBalanceConverter {
-	/// Convert from Substrate balance (u64) to EVM balance (U256)
-	fn into_evm_balance(value: SubstrateBalance) -> Option<EvmBalance> {
-		value
-			.into_u256()
-			.checked_mul(U256::from(EVM_DECIMALS_FACTOR))
-			.and_then(|evm_value| {
-				// Ensure the result fits within the maximum U256 value
-				if evm_value <= U256::MAX {
-					Some(EvmBalance::new(evm_value))
-				} else {
-					None
-				}
-			})
-	}
-
-	/// Convert from EVM balance (U256) to Substrate balance (u64)
-	fn into_substrate_balance(value: EvmBalance) -> Option<SubstrateBalance> {
-		value
-			.into_u256()
-			.checked_div(U256::from(EVM_DECIMALS_FACTOR))
-			.and_then(|substrate_value| {
-				// Ensure the result fits within the TAO balance type (u64)
-				if substrate_value <= U256::from(u64::MAX) {
-					Some(SubstrateBalance::new(substrate_value))
-				} else {
-					None
-				}
-			})
 	}
 }
 

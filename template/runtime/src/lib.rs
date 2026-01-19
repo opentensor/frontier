@@ -8,6 +8,10 @@
 
 extern crate alloc;
 
+mod genesis_config_preset;
+mod precompiles;
+mod weights;
+
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
@@ -40,7 +44,7 @@ use frame_support::weights::constants::ParityDbWeight as RuntimeDbWeight;
 use frame_support::weights::constants::RocksDbWeight as RuntimeDbWeight;
 use frame_support::{
 	derive_impl,
-	genesis_builder_helper::{build_state, get_preset},
+	genesis_builder_helper::build_state,
 	parameter_types,
 	traits::{ConstBool, ConstU32, ConstU64, ConstU8, FindAuthor, OnFinalize, OnTimestampSet},
 	weights::{constants::WEIGHT_REF_TIME_PER_MILLIS, IdentityFee, Weight},
@@ -54,8 +58,7 @@ use fp_evm::weight_per_gas;
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction};
 use pallet_evm::{
-	Account as EVMAccount, BalanceConverter, EnsureAccountId20, EvmBalance, FeeCalculator,
-	IdentityAddressMapping, Runner, SubstrateBalance,
+	Account as EVMAccount, EnsureAccountId20, FeeCalculator, IdentityAddressMapping, Runner,
 };
 
 // A few exports that help ease life for downstream crates.
@@ -63,7 +66,6 @@ pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 
-mod precompiles;
 use precompiles::FrontierPrecompiles;
 
 /// Type of block number.
@@ -358,41 +360,6 @@ parameter_types! {
 	pub WeightPerGas: Weight = Weight::from_parts(weight_per_gas(BLOCK_GAS_LIMIT, NORMAL_DISPATCH_RATIO, WEIGHT_MILLISECS_PER_BLOCK), 0);
 }
 
-const EVM_DECIMALS_FACTOR: u64 = 1_000_000_000_u64;
-pub struct SubtensorEvmBalanceConverter;
-
-impl BalanceConverter for SubtensorEvmBalanceConverter {
-	/// Convert from Substrate balance (u64) to EVM balance (U256)
-	fn into_evm_balance(value: SubstrateBalance) -> Option<EvmBalance> {
-		value
-			.into_u256()
-			.checked_mul(U256::from(EVM_DECIMALS_FACTOR))
-			.and_then(|evm_value| {
-				// Ensure the result fits within the maximum U256 value
-				if evm_value <= U256::MAX {
-					Some(EvmBalance::new(evm_value))
-				} else {
-					None
-				}
-			})
-	}
-
-	/// Convert from EVM balance (U256) to Substrate balance (u64)
-	fn into_substrate_balance(value: EvmBalance) -> Option<SubstrateBalance> {
-		value
-			.into_u256()
-			.checked_div(U256::from(EVM_DECIMALS_FACTOR))
-			.and_then(|substrate_value| {
-				// Ensure the result fits within the TAO balance type (u64)
-				if substrate_value <= U256::from(u64::MAX) {
-					Some(SubstrateBalance::new(substrate_value))
-				} else {
-					None
-				}
-			})
-	}
-}
-
 impl pallet_evm::Config for Runtime {
 	type AccountProvider = pallet_evm::FrameSystemAccountProvider<Self>;
 	type FeeCalculator = BaseFee;
@@ -417,7 +384,7 @@ impl pallet_evm::Config for Runtime {
 	type CreateOriginFilter = ();
 	type CreateInnerOriginFilter = ();
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
-	type BalanceConverter = SubtensorEvmBalanceConverter;
+	type BalanceConverter = ();
 }
 
 parameter_types! {
@@ -633,6 +600,8 @@ mod benches {
 		[pallet_timestamp, Timestamp]
 		[pallet_sudo, Sudo]
 		[pallet_evm, EVM]
+		[pallet_evm_precompile_curve25519, EVMPrecompileCurve25519Bench::<Runtime>]
+		[pallet_evm_precompile_sha3fips, EVMPrecompileSha3FIPSBench::<Runtime>]
 	);
 }
 
@@ -708,11 +677,11 @@ impl_runtime_apis! {
 		}
 
 		fn get_preset(id: &Option<PresetId>) -> Option<Vec<u8>> {
-			get_preset::<RuntimeGenesisConfig>(id, |_| None)
+			frame_support::genesis_builder_helper::get_preset::<RuntimeGenesisConfig>(id, genesis_config_preset::get_preset)
 		}
 
 		fn preset_names() -> Vec<sp_genesis_builder::PresetId> {
-			vec![]
+			vec![PresetId::from(sp_genesis_builder::DEV_RUNTIME_PRESET)]
 		}
 	}
 
@@ -1079,6 +1048,9 @@ impl_runtime_apis! {
 			use baseline::Pallet as BaselineBench;
 			use frame_system_benchmarking::Pallet as SystemBench;
 
+			use pallet_evm_precompile_curve25519_benchmarking::Pallet as EVMPrecompileCurve25519Bench;
+			use pallet_evm_precompile_sha3fips_benchmarking::Pallet as EVMPrecompileSha3FIPSBench;
+
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
 
@@ -1095,9 +1067,13 @@ impl_runtime_apis! {
 
 			use baseline::Pallet as BaselineBench;
 			use frame_system_benchmarking::Pallet as SystemBench;
+			use pallet_evm_precompile_curve25519_benchmarking::Pallet as EVMPrecompileCurve25519Bench;
+			use pallet_evm_precompile_sha3fips_benchmarking::Pallet as EVMPrecompileSha3FIPSBench;
 
 			impl baseline::Config for Runtime {}
 			impl frame_system_benchmarking::Config for Runtime {}
+			impl pallet_evm_precompile_curve25519_benchmarking::Config for Runtime {}
+			impl pallet_evm_precompile_sha3fips_benchmarking::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = Vec::new();
 
