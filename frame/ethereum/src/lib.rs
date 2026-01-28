@@ -592,7 +592,8 @@ impl<T: Config> Pallet<T> {
 		// The tag provides and requires must be filled correctly according to the nonce.
 		let mut builder = ValidTransactionBuilder::default()
 			.and_provides((origin, transaction_nonce))
-			.priority(priority);
+	        // basically EVM_TRANSACTION_BASE_PRIORITY: remove this once we have a proper way to set the priority
+			.priority(1); 
 
 		// In the context of the pool, a transaction with
 		// too high a nonce is still considered valid
