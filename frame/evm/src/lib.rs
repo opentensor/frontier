@@ -1052,6 +1052,24 @@ impl<T: Config> Pallet<T> {
 	/// Get the account metadata (hash and size) from storage if it exists,
 	/// or compute it from code and store it if it doesn't exist.
 	pub fn account_code_metadata(address: H160) -> CodeMetadata {
+		const EMPTY_CODE_HASH: [u8; 32] =
+			hex_literal::hex!("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+
+		let is_precompile = match T::PrecompilesValue::get().is_precompile(address, 0) {
+			IsPrecompileResult::Answer { is_precompile, .. } => is_precompile,
+			IsPrecompileResult::OutOfGas => false,
+		};
+
+		// If the address is a precompile, we return size 1 and empty hash.
+		// Then the contract call bypass the code size check for precompile calls.
+		// It will make the call like IPrecompile.call successful.
+		if is_precompile {
+			return CodeMetadata {
+				size: 1,
+				hash: EMPTY_CODE_HASH.into(),
+			};
+		}
+
 		if let Some(meta) = <AccountCodesMetadata<T>>::get(address) {
 			return meta;
 		}
@@ -1061,9 +1079,6 @@ impl<T: Config> Pallet<T> {
 		// If code is empty we return precomputed hash for empty code.
 		// We don't store it as this address could get code deployed in the future.
 		if code.is_empty() {
-			const EMPTY_CODE_HASH: [u8; 32] = hex_literal::hex!(
-				"c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-			);
 			return CodeMetadata {
 				size: 0,
 				hash: EMPTY_CODE_HASH.into(),
