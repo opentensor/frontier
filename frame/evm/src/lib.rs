@@ -80,6 +80,7 @@ use scale_info::TypeInfo;
 // Substrate
 use frame_support::{
 	dispatch::{DispatchResultWithPostInfo, Pays, PostDispatchInfo},
+	ensure,
 	storage::KeyPrefixIterator,
 	traits::{
 		fungible::{Balanced, Credit, Debt},
@@ -104,9 +105,8 @@ use fp_account::AccountId20;
 use fp_evm::GenesisAccount;
 pub use fp_evm::{
 	Account, AccountProvider, CallInfo, CreateInfo, ExecutionInfoV2 as ExecutionInfo,
-	FeeCalculator, IsPrecompileResult, LinearCostPrecompile, Log, Precompile, PrecompileFailure,
-	PrecompileHandle, PrecompileOutput, PrecompileResult, PrecompileSet,
-	TransactionValidationError, Vicinity,
+	FeeCalculator, IsPrecompileResult, Log, Precompile, PrecompileFailure, PrecompileHandle,
+	PrecompileOutput, PrecompileResult, PrecompileSet, TransactionValidationError, Vicinity,
 };
 
 pub use self::{
@@ -411,6 +411,7 @@ pub mod pallet {
 			authorization_list: AuthorizationList,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
+			Self::ensure_balance_for_contract_creation(&source)?;
 
 			let whitelist = <WhitelistedCreators<T>>::get();
 			let whitelist_disabled = <DisableWhitelistCheck<T>>::get();
@@ -452,6 +453,15 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
+					let mini_balance = <<T as Config>::Currency as Currency<
+						<<T as Config>::AccountProvider as AccountProvider>::AccountId,
+					>>::minimum_balance();
+					T::Currency::transfer(
+						&T::AddressMapping::into_account_id(source),
+						&T::AddressMapping::into_account_id(create_address),
+						mini_balance,
+						ExistenceRequirement::AllowDeath,
+					)?;
 					Pallet::<T>::deposit_event(Event::<T>::Created {
 						address: create_address,
 					});
@@ -504,6 +514,7 @@ pub mod pallet {
 			authorization_list: AuthorizationList,
 		) -> DispatchResultWithPostInfo {
 			T::CallOrigin::ensure_address_origin(&source, origin)?;
+			Self::ensure_balance_for_contract_creation(&source)?;
 
 			let whitelist = <WhitelistedCreators<T>>::get();
 			let whitelist_disabled = <DisableWhitelistCheck<T>>::get();
@@ -546,6 +557,15 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
+					let mini_balance = <<T as Config>::Currency as Currency<
+						<<T as Config>::AccountProvider as AccountProvider>::AccountId,
+					>>::minimum_balance();
+					T::Currency::transfer(
+						&T::AddressMapping::into_account_id(source),
+						&T::AddressMapping::into_account_id(create_address),
+						mini_balance,
+						ExistenceRequirement::AllowDeath,
+					)?;
 					Pallet::<T>::deposit_event(Event::<T>::Created {
 						address: create_address,
 					});
@@ -646,6 +666,10 @@ pub mod pallet {
 		NotAllowed,
 		/// Address not allowed to deploy contracts either via CREATE or CALL(CREATE).
 		CreateOriginNotAllowed,
+		/// Not enough balance to pay existential deposit
+		BalanceLowForExistentialDeposit,
+		/// Token transfer to new contract failed
+		TransferToNewContractFailed,
 	}
 
 	impl<T> From<TransactionValidationError> for Error<T> {
@@ -1117,6 +1141,45 @@ impl<T: Config> Pallet<T> {
 		let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
 
 		T::FindAuthor::find_author(pre_runtime_digests).unwrap_or_default()
+	}
+
+	/// Ensure balance to pre fund contract creation.
+	pub fn ensure_balance_for_contract_creation(source: &H160) -> Result<(), Error<T>> {
+		let account_id = T::AddressMapping::into_account_id(*source);
+		let balance =
+			T::Currency::reducible_balance(&account_id, Preservation::Preserve, Fortitude::Polite);
+
+		let balance = UniqueSaturatedInto::<u64>::unique_saturated_into(balance);
+
+		let mini_balance = <<T as Config>::Currency as Currency<
+			<<T as Config>::AccountProvider as AccountProvider>::AccountId,
+		>>::minimum_balance();
+
+		let mini_balance = UniqueSaturatedInto::<u64>::unique_saturated_into(mini_balance);
+
+		ensure!(
+			balance >= mini_balance,
+			Error::<T>::BalanceLowForExistentialDeposit
+		);
+		Ok(())
+	}
+
+	/// transfer existential deposit to new contract
+	pub fn transfer_minimal_to_new_contract(
+		source: &H160,
+		create_address: &H160,
+	) -> Result<(), Error<T>> {
+		let mini_balance = <<T as Config>::Currency as Currency<
+			<<T as Config>::AccountProvider as AccountProvider>::AccountId,
+		>>::minimum_balance();
+		T::Currency::transfer(
+			&T::AddressMapping::into_account_id(*source),
+			&T::AddressMapping::into_account_id(*create_address),
+			mini_balance,
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| Error::<T>::TransferToNewContractFailed)?;
+		Ok(())
 	}
 }
 
