@@ -1067,6 +1067,16 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl stp_shield::ShieldApi<Block> for Runtime {
+		fn try_decode_shielded_tx(_uxt: <Block as BlockT>::Extrinsic) -> Option<stp_shield::ShieldedTransaction> {
+			None
+		}
+
+		fn try_unshield_tx(_shielded_tx: stp_shield::ShieldedTransaction) -> Option<<Block as BlockT>::Extrinsic> {
+			None
+		}
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (

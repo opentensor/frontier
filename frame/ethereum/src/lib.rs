@@ -567,7 +567,7 @@ impl<T: Config> Pallet<T> {
 			return Err(InvalidTransaction::BadSigner.into());
 		}
 
-		let priority = match (
+		let _priority = match (
 			transaction_data.gas_price,
 			transaction_data.max_fee_per_gas,
 			transaction_data.max_priority_fee_per_gas,

@@ -84,6 +84,10 @@ frontier-template-runtime = { workspace = true, features = ["std"] }
 # Cumulus primitives
 cumulus-primitives-proof-size-hostfunction = { workspace = true }
 
+# MEV Shield
+stp-shield = { workspace = true }
+stc-shield = { workspace = true }
+
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 

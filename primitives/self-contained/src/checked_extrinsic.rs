@@ -164,7 +164,7 @@ where
 			}
 		}
 	}
-	
+
 	fn call(&self) -> &Self::Call {
 		&self.function
 	}

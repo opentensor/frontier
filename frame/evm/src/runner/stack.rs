@@ -166,7 +166,7 @@ where
 		value: U256,
 		mut gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
-		max_priority_fee_per_gas: Option<U256>,
+		_max_priority_fee_per_gas: Option<U256>,
 		config: &'config evm::Config,
 		precompiles: &'precompiles T::PrecompilesType,
 		is_transactional: bool,
