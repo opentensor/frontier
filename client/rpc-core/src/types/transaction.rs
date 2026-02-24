@@ -22,6 +22,48 @@ use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::types::{BuildFrom, Bytes};
 
+/// Wrapper for serializing `AccessListItem` with Ethereum JSON-RPC spec
+/// compliant camelCase field names (`storageKeys` instead of `storage_keys`).
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccessListItemCamelCase(pub AccessListItem);
+
+impl Serialize for AccessListItemCamelCase {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: Serializer,
+	{
+		let mut state = serializer.serialize_struct("AccessListItem", 2)?;
+		state.serialize_field("address", &self.0.address)?;
+		state.serialize_field("storageKeys", &self.0.storage_keys)?;
+		state.end()
+	}
+}
+
+/// Serialize an `Option<Vec<AccessListItem>>` with camelCase field names.
+mod access_list_camelcase {
+	use super::*;
+	use serde::ser::SerializeSeq;
+
+	pub fn serialize<S>(
+		items: &Option<Vec<AccessListItem>>,
+		serializer: S,
+	) -> Result<S::Ok, S::Error>
+	where
+		S: Serializer,
+	{
+		match items {
+			Some(items) => {
+				let mut seq = serializer.serialize_seq(Some(items.len()))?;
+				for item in items {
+					seq.serialize_element(&AccessListItemCamelCase(item.clone()))?;
+				}
+				seq.end()
+			}
+			None => serializer.serialize_none(),
+		}
+	}
+}
+
 /// AuthorizationListItem for EIP-7702 transactions
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -76,7 +118,10 @@ pub struct Transaction {
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub chain_id: Option<U64>,
 	/// Pre-pay to warm storage access.
-	#[serde(skip_serializing_if = "Option::is_none")]
+	#[serde(
+		skip_serializing_if = "Option::is_none",
+		serialize_with = "access_list_camelcase::serialize"
+	)]
 	pub access_list: Option<Vec<AccessListItem>>,
 	/// EIP-7702 authorization list.
 	#[serde(skip_serializing_if = "Option::is_none")]
