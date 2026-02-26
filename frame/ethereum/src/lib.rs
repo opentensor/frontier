@@ -567,7 +567,7 @@ impl<T: Config> Pallet<T> {
 			return Err(InvalidTransaction::BadSigner.into());
 		}
 
-		let priority = match (
+		let _priority = match (
 			transaction_data.gas_price,
 			transaction_data.max_fee_per_gas,
 			transaction_data.max_priority_fee_per_gas,
@@ -593,6 +593,7 @@ impl<T: Config> Pallet<T> {
 		let mut builder = ValidTransactionBuilder::default()
 			.and_provides((origin, transaction_nonce))
 			// basically EVM_TRANSACTION_BASE_PRIORITY: remove this once we have a proper way to set the priority
+			// .priority(priority)
 			.priority(1);
 
 		// In the context of the pool, a transaction with
