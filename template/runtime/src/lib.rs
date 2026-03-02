@@ -57,6 +57,7 @@ use pallet_evm::{
 	Account as EVMAccount, BalanceConverter, EnsureAccountId20, EvmBalance, FeeCalculator,
 	IdentityAddressMapping, Runner, SubstrateBalance,
 };
+use stp_shield::ShieldedTransaction;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_system::Call as SystemCall;
@@ -1105,6 +1106,16 @@ impl_runtime_apis! {
 			let params = (&config, &whitelist);
 			add_benchmarks!(params, batches);
 			Ok(batches)
+		}
+	}
+
+	impl stp_shield::ShieldApi<Block> for Runtime {
+		fn try_decode_shielded_tx(_uxt: <Block as BlockT>::Extrinsic) -> Option<ShieldedTransaction> {
+			None
+		}
+
+		fn try_unshield_tx(_dec_key_bytes: Vec<u8>, _shielded_tx: ShieldedTransaction) -> Option<<Block as BlockT>::Extrinsic> {
+			None
 		}
 	}
 }
