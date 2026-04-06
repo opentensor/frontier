@@ -5,7 +5,7 @@ on:
     branches:
       - master
       - 'polkadot-v**'
-      - 'frontier-**'
+      - 'frontier-stable**-otf-patches'
     paths-ignore:
       - "**.md"
   pull_request:

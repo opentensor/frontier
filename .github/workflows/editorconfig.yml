@@ -5,7 +5,7 @@ on:
     branches:
       - master
       - 'polkadot-v**'
-      - 'frontier-**'
+      - 'frontier-stable**-otf-patches'
   pull_request:
 
 jobs:
