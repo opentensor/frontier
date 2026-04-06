@@ -5,10 +5,8 @@ on:
     branches:
       - master
       - 'polkadot-v**'
+      - 'frontier-**'
   pull_request:
-    branches:
-      - master
-      - 'polkadot-v**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
