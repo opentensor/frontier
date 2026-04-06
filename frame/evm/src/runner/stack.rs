@@ -165,7 +165,7 @@ where
 		value: U256,
 		mut gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
-		max_priority_fee_per_gas: Option<U256>,
+		_max_priority_fee_per_gas: Option<U256>,
 		config: &'config evm::Config,
 		precompiles: &'precompiles T::PrecompilesType,
 		is_transactional: bool,
@@ -227,6 +227,9 @@ where
 				weight,
 			});
 		}
+
+		// OTF: Priority fees disabled to prevent MEV-based transaction ordering.
+		let max_priority_fee_per_gas = None;
 
 		let total_fee_per_gas = if is_transactional {
 			match (max_fee_per_gas, max_priority_fee_per_gas) {

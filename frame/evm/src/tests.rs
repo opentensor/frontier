@@ -1258,8 +1258,10 @@ fn reducible_balance() {
 	});
 }
 
+// OTF: Priority fees are disabled, so the author receives no tip
+// even when max_priority_fee_per_gas is set.
 #[test]
-fn author_should_get_tip() {
+fn author_should_not_get_tip() {
 	new_test_ext().execute_with(|| {
 		let author = EVM::find_author();
 		let before_tip = EVM::account_basic(&author).0.balance;
@@ -1278,7 +1280,8 @@ fn author_should_get_tip() {
 		);
 		result.expect("EVM can be called");
 		let after_tip = EVM::account_basic(&author).0.balance;
-		assert_eq!(after_tip, (before_tip + 21000));
+		// Priority fees disabled — author balance unchanged.
+		assert_eq!(after_tip, before_tip);
 	});
 }
 
@@ -1361,15 +1364,12 @@ fn refunds_should_work() {
 }
 
 #[test]
+// OTF: Priority fees are disabled, so the tip component is zero.
 fn refunds_and_priority_should_work() {
 	new_test_ext().execute_with(|| {
 		let author = EVM::find_author();
 		let before_tip = EVM::account_basic(&author).0.balance;
 		let before_call = EVM::account_basic(&H160::default()).0.balance;
-		// We deliberately set a base fee + max tip > max fee.
-		// The effective priority tip will be 1GWEI instead 1.5GWEI:
-		// 		(max_fee_per_gas - base_fee).min(max_priority_fee)
-		//		(2 - 1).min(1.5)
 		let tip = U256::from(1_500_000_000);
 		let max_fee_per_gas = U256::from(2_000_000_000);
 		let used_gas = U256::from(21_000);
@@ -1387,14 +1387,14 @@ fn refunds_and_priority_should_work() {
 			Vec::new(),
 		);
 		let (base_fee, _) = <Test as Config>::FeeCalculator::min_gas_price();
-		let actual_tip = (max_fee_per_gas - base_fee).min(tip) * used_gas;
-		let total_cost = (used_gas * base_fee) + actual_tip + U256::from(1);
+		// Priority disabled — only base fee is charged, no tip.
+		let total_cost = (used_gas * base_fee) + U256::from(1);
 		let after_call = EVM::account_basic(&H160::default()).0.balance;
-		// The tip is deducted but never refunded to the caller.
 		assert_eq!(after_call, before_call - total_cost);
 
 		let after_tip = EVM::account_basic(&author).0.balance;
-		assert_eq!(after_tip, (before_tip + actual_tip));
+		// Author balance unchanged — no priority fee.
+		assert_eq!(after_tip, before_tip);
 	});
 }
 
