@@ -53,8 +53,9 @@ use fp_evm::{
 use super::meter::StorageMeter;
 use crate::{
 	runner::Runner as RunnerT, AccountCodes, AccountCodesMetadata, AccountProvider,
-	AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, EnsureCreateOrigin,
-	Error, Event, FeeCalculator, OnChargeEVMTransaction, OnCreate, Pallet, RunnerError,
+	AccountStorages, AddressMapping, BalanceConverter, BalanceOf, BlockHashMapping, Config,
+	EnsureCreateOrigin, Error, Event, EvmBalance, FeeCalculator, OnChargeEVMTransaction, OnCreate,
+	Pallet, RunnerError,
 };
 
 #[cfg(feature = "forbid-evm-reentrancy")]
@@ -269,7 +270,7 @@ where
 				})?;
 
 		// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
-		let fee = T::OnChargeTransaction::withdraw_fee(&source, total_fee)
+		let fee = T::OnChargeTransaction::withdraw_fee(&source, EvmBalance::new(total_fee))
 			.map_err(|e| RunnerError { error: e, weight })?;
 
 		let vicinity = Vicinity {
@@ -403,9 +404,9 @@ where
 		let actual_priority_fee = T::OnChargeTransaction::correct_and_deposit_fee(
 			&source,
 			// Actual fee after evm execution, including tip.
-			actual_fee,
+			EvmBalance::new(actual_fee),
 			// Base fee.
-			actual_base_fee,
+			EvmBalance::new(actual_base_fee),
 			// Fee initially withdrawn.
 			fee,
 		);
@@ -1190,13 +1191,16 @@ where
 	fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
 		let source = T::AddressMapping::into_account_id(transfer.source);
 		let target = T::AddressMapping::into_account_id(transfer.target);
+
+		// Adjust decimals
+		let value_sub =
+			T::BalanceConverter::into_substrate_balance(EvmBalance::new(transfer.value))
+				.ok_or(ExitError::OutOfFund)?;
+
 		T::Currency::transfer(
 			&source,
 			&target,
-			transfer
-				.value
-				.try_into()
-				.map_err(|_| ExitError::OutOfFund)?,
+			value_sub.0.unique_saturated_into(),
 			ExistenceRequirement::AllowDeath,
 		)
 		.map_err(|_| ExitError::OutOfFund)
