@@ -476,6 +476,17 @@ where
 		proof_size_base_cost: Option<u64>,
 		evm_config: &evm::Config,
 	) -> Result<(), RunnerError<Self::Error>> {
+		// OTF: Whitelist check for contract creation (target = None).
+		if target.is_none() && !crate::DisableWhitelistCheck::<T>::get() {
+			let whitelist = crate::WhitelistedCreators::<T>::get();
+			if !whitelist.contains(&source) {
+				return Err(RunnerError {
+					error: Error::<T>::NotAllowed,
+					weight: Weight::zero(),
+				});
+			}
+		}
+
 		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
 		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
 		weight = weight.saturating_add(inner_weight);

@@ -565,6 +565,22 @@ pub mod pallet {
 				pays_fee: Pays::No,
 			})
 		}
+
+		#[pallet::call_index(4)]
+		#[pallet::weight(T::DbWeight::get().writes(1))]
+		pub fn set_whitelist(origin: OriginFor<T>, new: Vec<H160>) -> DispatchResult {
+			ensure_root(origin)?;
+			<WhitelistedCreators<T>>::put(new);
+			Ok(())
+		}
+
+		#[pallet::call_index(5)]
+		#[pallet::weight(T::DbWeight::get().writes(1))]
+		pub fn disable_whitelist(origin: OriginFor<T>, disabled: bool) -> DispatchResult {
+			ensure_root(origin)?;
+			<DisableWhitelistCheck<T>>::put(disabled);
+			Ok(())
+		}
 	}
 
 	#[pallet::event]
@@ -612,6 +628,8 @@ pub mod pallet {
 		Undefined,
 		/// Address not allowed to deploy contracts either via CREATE or CALL(CREATE).
 		CreateOriginNotAllowed,
+		/// Origin is not allowed to perform the operation.
+		NotAllowed,
 	}
 
 	impl<T> From<TransactionValidationError> for Error<T> {
@@ -638,6 +656,8 @@ pub mod pallet {
 	#[derive(frame_support::DefaultNoBound)]
 	pub struct GenesisConfig<T> {
 		pub accounts: BTreeMap<H160, GenesisAccount>,
+		pub whitelisted: Vec<H160>,
+		pub disable_whitelist_check: bool,
 		#[serde(skip)]
 		pub _marker: PhantomData<T>,
 	}
@@ -673,6 +693,9 @@ pub mod pallet {
 					<AccountStorages<T>>::insert(address, index, value);
 				}
 			}
+
+			<WhitelistedCreators<T>>::put(self.whitelisted.clone());
+			<DisableWhitelistCheck<T>>::put(self.disable_whitelist_check);
 		}
 	}
 
@@ -686,6 +709,12 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type AccountStorages<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, H160, Blake2_128Concat, H256, H256, ValueQuery>;
+
+	#[pallet::storage]
+	pub type WhitelistedCreators<T: Config> = StorageValue<_, Vec<H160>, ValueQuery>;
+
+	#[pallet::storage]
+	pub type DisableWhitelistCheck<T: Config> = StorageValue<_, bool, ValueQuery>;
 }
 
 /// Utility alias for easy access to the [`AccountProvider::AccountId`] type from a given config.

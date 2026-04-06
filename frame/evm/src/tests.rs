@@ -926,7 +926,11 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	.assimilate_storage(&mut t)
 	.unwrap();
 
-	t.into()
+	let mut ext = sp_io::TestExternalities::new(t);
+	ext.execute_with(|| {
+		crate::DisableWhitelistCheck::<Test>::put(true);
+	});
+	ext
 }
 
 // pragma solidity ^0.8.2;
@@ -1700,4 +1704,89 @@ fn metadata_empty_dont_code_gets_cached() {
 
 		assert!(<AccountCodesMetadata<Test>>::get(address).is_none());
 	});
+}
+
+mod whitelist_tests {
+	use super::*;
+	use crate::mock::*;
+
+	fn create_with_source(
+		source: H160,
+	) -> Result<CreateInfo, crate::RunnerError<crate::Error<Test>>> {
+		let gas_limit = 1_000_000u64;
+		<Test as Config>::Runner::create(
+			source,
+			hex::decode(FOO_BAR_CONTRACT_CREATOR_BYTECODE.trim_end()).unwrap(),
+			U256::zero(),
+			gas_limit,
+			Some(FixedGasPrice::min_gas_price().0),
+			None,
+			None,
+			Vec::new(),
+			Vec::new(),
+			true,
+			true, // validate = true, so whitelist check runs
+			Some(FixedGasWeightMapping::<Test>::gas_to_weight(
+				gas_limit, true,
+			)),
+			Some(0),
+			&<Test as Config>::config().clone(),
+		)
+	}
+
+	#[test]
+	fn create_blocked_when_not_whitelisted() {
+		new_test_ext().execute_with(|| {
+			// Enable whitelist check and leave whitelist empty.
+			crate::DisableWhitelistCheck::<Test>::put(false);
+			crate::WhitelistedCreators::<Test>::put(Vec::<H160>::new());
+
+			let result = create_with_source(H160::default());
+			match result {
+				Err(RunnerError {
+					error: Error::NotAllowed,
+					..
+				}) => (),
+				_ => panic!("Expected NotAllowed, got {:?}", result),
+			}
+		});
+	}
+
+	#[test]
+	fn create_succeeds_when_whitelisted() {
+		new_test_ext().execute_with(|| {
+			crate::DisableWhitelistCheck::<Test>::put(false);
+			crate::WhitelistedCreators::<Test>::put(vec![H160::default()]);
+
+			assert!(create_with_source(H160::default()).is_ok());
+		});
+	}
+
+	#[test]
+	fn create_succeeds_when_whitelist_disabled() {
+		new_test_ext().execute_with(|| {
+			crate::DisableWhitelistCheck::<Test>::put(true);
+			crate::WhitelistedCreators::<Test>::put(Vec::<H160>::new());
+
+			assert!(create_with_source(H160::default()).is_ok());
+		});
+	}
+
+	#[test]
+	fn create_blocked_for_wrong_address() {
+		new_test_ext().execute_with(|| {
+			crate::DisableWhitelistCheck::<Test>::put(false);
+			// Only H160::default() is whitelisted, not [4u8; 20].
+			crate::WhitelistedCreators::<Test>::put(vec![H160::default()]);
+
+			let result = create_with_source(H160::from([4u8; 20]));
+			match result {
+				Err(RunnerError {
+					error: Error::NotAllowed,
+					..
+				}) => (),
+				_ => panic!("Expected NotAllowed, got {:?}", result),
+			}
+		});
+	}
 }
