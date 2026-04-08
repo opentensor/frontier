@@ -53,8 +53,9 @@ use fp_evm::{
 use super::meter::StorageMeter;
 use crate::{
 	runner::Runner as RunnerT, AccountCodes, AccountCodesMetadata, AccountProvider,
-	AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, EnsureCreateOrigin,
-	Error, Event, FeeCalculator, OnChargeEVMTransaction, OnCreate, Pallet, RunnerError,
+	AccountStorages, AddressMapping, BalanceConverter, BalanceOf, BlockHashMapping, Config,
+	EnsureCreateOrigin, Error, Event, EvmBalance, FeeCalculator, OnChargeEVMTransaction, OnCreate,
+	Pallet, RunnerError,
 };
 
 #[cfg(feature = "forbid-evm-reentrancy")]
@@ -165,7 +166,7 @@ where
 		value: U256,
 		mut gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
-		max_priority_fee_per_gas: Option<U256>,
+		_max_priority_fee_per_gas: Option<U256>,
 		config: &'config evm::Config,
 		precompiles: &'precompiles T::PrecompilesType,
 		is_transactional: bool,
@@ -228,6 +229,9 @@ where
 			});
 		}
 
+		// OTF: Priority fees disabled to prevent MEV-based transaction ordering.
+		let max_priority_fee_per_gas = None;
+
 		let total_fee_per_gas = if is_transactional {
 			match (max_fee_per_gas, max_priority_fee_per_gas) {
 				// Zero max_fee_per_gas for validated transactional calls exist in XCM -> EVM
@@ -266,7 +270,7 @@ where
 				})?;
 
 		// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
-		let fee = T::OnChargeTransaction::withdraw_fee(&source, total_fee)
+		let fee = T::OnChargeTransaction::withdraw_fee(&source, EvmBalance::new(total_fee))
 			.map_err(|e| RunnerError { error: e, weight })?;
 
 		let vicinity = Vicinity {
@@ -400,9 +404,9 @@ where
 		let actual_priority_fee = T::OnChargeTransaction::correct_and_deposit_fee(
 			&source,
 			// Actual fee after evm execution, including tip.
-			actual_fee,
+			EvmBalance::new(actual_fee),
 			// Base fee.
-			actual_base_fee,
+			EvmBalance::new(actual_base_fee),
 			// Fee initially withdrawn.
 			fee,
 		);
@@ -473,6 +477,17 @@ where
 		proof_size_base_cost: Option<u64>,
 		evm_config: &evm::Config,
 	) -> Result<(), RunnerError<Self::Error>> {
+		// OTF: Whitelist check for contract creation (target = None).
+		if target.is_none() && !crate::DisableWhitelistCheck::<T>::get() {
+			let whitelist = crate::WhitelistedCreators::<T>::get();
+			if !whitelist.contains(&source) {
+				return Err(RunnerError {
+					error: Error::<T>::NotAllowed,
+					weight: Weight::zero(),
+				});
+			}
+		}
+
 		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
 		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
 		weight = weight.saturating_add(inner_weight);
@@ -1176,13 +1191,16 @@ where
 	fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
 		let source = T::AddressMapping::into_account_id(transfer.source);
 		let target = T::AddressMapping::into_account_id(transfer.target);
+
+		// Adjust decimals
+		let value_sub =
+			T::BalanceConverter::into_substrate_balance(EvmBalance::new(transfer.value))
+				.ok_or(ExitError::OutOfFund)?;
+
 		T::Currency::transfer(
 			&source,
 			&target,
-			transfer
-				.value
-				.try_into()
-				.map_err(|_| ExitError::OutOfFund)?,
+			value_sub.0.unique_saturated_into(),
 			ExistenceRequirement::AllowDeath,
 		)
 		.map_err(|_| ExitError::OutOfFund)

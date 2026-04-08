@@ -171,7 +171,7 @@ fn testnet_genesis(
 		"aura": { "authorities": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>() },
 		"grandpa": { "authorities": initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect::<Vec<_>>() },
 		"evmChainId": { "chainId": chain_id },
-		"evm": { "accounts": evm_accounts },
+		"evm": { "accounts": evm_accounts, "disableWhitelistCheck": true },
 		"manualSeal": { "enable": enable_manual_seal }
 	})
 }

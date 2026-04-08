@@ -926,7 +926,11 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	.assimilate_storage(&mut t)
 	.unwrap();
 
-	t.into()
+	let mut ext = sp_io::TestExternalities::new(t);
+	ext.execute_with(|| {
+		crate::DisableWhitelistCheck::<Test>::put(true);
+	});
+	ext
 }
 
 // pragma solidity ^0.8.2;
@@ -1155,11 +1159,11 @@ fn fee_deduction() {
 		assert_eq!(Balances::free_balance(&substrate_addr), 100);
 
 		// Deduct fees as 10 units
-		let imbalance = <<Test as Config>::OnChargeTransaction as OnChargeEVMTransaction<Test>>::withdraw_fee(&evm_addr, U256::from(10)).unwrap();
+		let imbalance = <<Test as Config>::OnChargeTransaction as OnChargeEVMTransaction<Test>>::withdraw_fee(&evm_addr, EvmBalance::from(10u64)).unwrap();
 		assert_eq!(Balances::free_balance(&substrate_addr), 90);
 
 		// Refund fees as 5 units
-		<<Test as Config>::OnChargeTransaction as OnChargeEVMTransaction<Test>>::correct_and_deposit_fee(&evm_addr, U256::from(5), U256::from(5), imbalance);
+		<<Test as Config>::OnChargeTransaction as OnChargeEVMTransaction<Test>>::correct_and_deposit_fee(&evm_addr, EvmBalance::from(5u64), EvmBalance::from(5u64), imbalance);
 		assert_eq!(Balances::free_balance(&substrate_addr), 95);
 	});
 }
@@ -1208,7 +1212,7 @@ fn ed_0_refund_patch_is_required() {
 		let _ =
 			<<Test as Config>::OnChargeTransaction as OnChargeEVMTransaction<Test>>::withdraw_fee(
 				&evm_addr,
-				U256::from(100),
+				EvmBalance::from(100u64),
 			)
 			.unwrap();
 		assert_eq!(Balances::free_balance(&substrate_addr), 0);
@@ -1258,8 +1262,10 @@ fn reducible_balance() {
 	});
 }
 
+// OTF: Priority fees are disabled, so the author receives no tip
+// even when max_priority_fee_per_gas is set.
 #[test]
-fn author_should_get_tip() {
+fn author_should_not_get_tip() {
 	new_test_ext().execute_with(|| {
 		let author = EVM::find_author();
 		let before_tip = EVM::account_basic(&author).0.balance;
@@ -1278,7 +1284,8 @@ fn author_should_get_tip() {
 		);
 		result.expect("EVM can be called");
 		let after_tip = EVM::account_basic(&author).0.balance;
-		assert_eq!(after_tip, (before_tip + 21000));
+		// Priority fees disabled — author balance unchanged.
+		assert_eq!(after_tip, before_tip);
 	});
 }
 
@@ -1361,15 +1368,12 @@ fn refunds_should_work() {
 }
 
 #[test]
+// OTF: Priority fees are disabled, so the tip component is zero.
 fn refunds_and_priority_should_work() {
 	new_test_ext().execute_with(|| {
 		let author = EVM::find_author();
 		let before_tip = EVM::account_basic(&author).0.balance;
 		let before_call = EVM::account_basic(&H160::default()).0.balance;
-		// We deliberately set a base fee + max tip > max fee.
-		// The effective priority tip will be 1GWEI instead 1.5GWEI:
-		// 		(max_fee_per_gas - base_fee).min(max_priority_fee)
-		//		(2 - 1).min(1.5)
 		let tip = U256::from(1_500_000_000);
 		let max_fee_per_gas = U256::from(2_000_000_000);
 		let used_gas = U256::from(21_000);
@@ -1387,14 +1391,14 @@ fn refunds_and_priority_should_work() {
 			Vec::new(),
 		);
 		let (base_fee, _) = <Test as Config>::FeeCalculator::min_gas_price();
-		let actual_tip = (max_fee_per_gas - base_fee).min(tip) * used_gas;
-		let total_cost = (used_gas * base_fee) + actual_tip + U256::from(1);
+		// Priority disabled — only base fee is charged, no tip.
+		let total_cost = (used_gas * base_fee) + U256::from(1);
 		let after_call = EVM::account_basic(&H160::default()).0.balance;
-		// The tip is deducted but never refunded to the caller.
 		assert_eq!(after_call, before_call - total_cost);
 
 		let after_tip = EVM::account_basic(&author).0.balance;
-		assert_eq!(after_tip, (before_tip + actual_tip));
+		// Author balance unchanged — no priority fee.
+		assert_eq!(after_tip, before_tip);
 	});
 }
 
@@ -1700,4 +1704,167 @@ fn metadata_empty_dont_code_gets_cached() {
 
 		assert!(<AccountCodesMetadata<Test>>::get(address).is_none());
 	});
+}
+
+mod whitelist_tests {
+	use super::*;
+
+	fn create_with_source(
+		source: H160,
+	) -> Result<CreateInfo, crate::RunnerError<crate::Error<Test>>> {
+		let gas_limit = 1_000_000u64;
+		<Test as Config>::Runner::create(
+			source,
+			hex::decode(FOO_BAR_CONTRACT_CREATOR_BYTECODE.trim_end()).unwrap(),
+			U256::zero(),
+			gas_limit,
+			Some(FixedGasPrice::min_gas_price().0),
+			None,
+			None,
+			Vec::new(),
+			Vec::new(),
+			true,
+			true, // validate = true, so whitelist check runs
+			Some(FixedGasWeightMapping::<Test>::gas_to_weight(
+				gas_limit, true,
+			)),
+			Some(0),
+			&<Test as Config>::config().clone(),
+		)
+	}
+
+	#[test]
+	fn create_blocked_when_not_whitelisted() {
+		new_test_ext().execute_with(|| {
+			// Enable whitelist check and leave whitelist empty.
+			crate::DisableWhitelistCheck::<Test>::put(false);
+			crate::WhitelistedCreators::<Test>::put(Vec::<H160>::new());
+
+			let result = create_with_source(H160::default());
+			match result {
+				Err(RunnerError {
+					error: Error::NotAllowed,
+					..
+				}) => (),
+				_ => panic!("Expected NotAllowed, got {:?}", result),
+			}
+		});
+	}
+
+	#[test]
+	fn create_succeeds_when_whitelisted() {
+		new_test_ext().execute_with(|| {
+			crate::DisableWhitelistCheck::<Test>::put(false);
+			crate::WhitelistedCreators::<Test>::put(vec![H160::default()]);
+
+			assert!(create_with_source(H160::default()).is_ok());
+		});
+	}
+
+	#[test]
+	fn create_succeeds_when_whitelist_disabled() {
+		new_test_ext().execute_with(|| {
+			crate::DisableWhitelistCheck::<Test>::put(true);
+			crate::WhitelistedCreators::<Test>::put(Vec::<H160>::new());
+
+			assert!(create_with_source(H160::default()).is_ok());
+		});
+	}
+
+	#[test]
+	fn create_blocked_for_wrong_address() {
+		new_test_ext().execute_with(|| {
+			crate::DisableWhitelistCheck::<Test>::put(false);
+			// Only H160::default() is whitelisted, not [4u8; 20].
+			crate::WhitelistedCreators::<Test>::put(vec![H160::default()]);
+
+			let result = create_with_source(H160::from([4u8; 20]));
+			match result {
+				Err(RunnerError {
+					error: Error::NotAllowed,
+					..
+				}) => (),
+				_ => panic!("Expected NotAllowed, got {:?}", result),
+			}
+		});
+	}
+}
+
+mod balance_converter_tests {
+	use sp_core::U256;
+
+	use crate::{BalanceConverter, EvmBalance, SubstrateBalance};
+
+	const EVM_DECIMALS_FACTOR: u64 = 1_000_000_000;
+
+	pub struct SubtensorEvmBalanceConverter;
+
+	impl BalanceConverter for SubtensorEvmBalanceConverter {
+		fn into_evm_balance(value: SubstrateBalance) -> Option<EvmBalance> {
+			value
+				.into_u256()
+				.checked_mul(U256::from(EVM_DECIMALS_FACTOR))
+				.map(EvmBalance::new)
+		}
+
+		fn into_substrate_balance(value: EvmBalance) -> Option<SubstrateBalance> {
+			value
+				.into_u256()
+				.checked_div(U256::from(EVM_DECIMALS_FACTOR))
+				.and_then(|v| {
+					if v <= U256::from(u64::MAX) {
+						Some(SubstrateBalance::new(v))
+					} else {
+						None
+					}
+				})
+		}
+	}
+
+	#[test]
+	fn round_trip() {
+		let original = SubstrateBalance::new(U256::from(42));
+		let evm = SubtensorEvmBalanceConverter::into_evm_balance(original).unwrap();
+		assert_eq!(evm.into_u256(), U256::from(42_000_000_000u64));
+		let back = SubtensorEvmBalanceConverter::into_substrate_balance(evm).unwrap();
+		assert_eq!(back.into_u256(), original.into_u256());
+	}
+
+	#[test]
+	fn zero() {
+		let zero = SubstrateBalance::new(U256::zero());
+		let evm = SubtensorEvmBalanceConverter::into_evm_balance(zero).unwrap();
+		assert_eq!(evm.into_u256(), U256::zero());
+		let back = SubtensorEvmBalanceConverter::into_substrate_balance(evm).unwrap();
+		assert_eq!(back.into_u256(), U256::zero());
+	}
+
+	#[test]
+	fn truncation() {
+		// Sub-nano remainder is truncated
+		let evm = EvmBalance::new(U256::from(1_500_000_000u64));
+		let sub = SubtensorEvmBalanceConverter::into_substrate_balance(evm).unwrap();
+		assert_eq!(sub.into_u256(), U256::from(1));
+
+		let evm = EvmBalance::new(U256::from(999_999_999u64));
+		let sub = SubtensorEvmBalanceConverter::into_substrate_balance(evm).unwrap();
+		assert_eq!(sub.into_u256(), U256::from(0));
+	}
+
+	#[test]
+	fn overflow_substrate_to_evm() {
+		// U256::MAX / 1e9 is still huge, so into_evm_balance on U256::MAX should overflow the mul
+		let huge = SubstrateBalance::new(U256::MAX);
+		assert!(SubtensorEvmBalanceConverter::into_evm_balance(huge).is_none());
+	}
+
+	#[test]
+	fn overflow_evm_to_substrate() {
+		// A value that after division exceeds u64::MAX
+		let too_big = EvmBalance::new(
+			U256::from(u64::MAX) * U256::from(EVM_DECIMALS_FACTOR)
+				+ U256::from(EVM_DECIMALS_FACTOR),
+		);
+		assert!(SubtensorEvmBalanceConverter::into_substrate_balance(too_big).is_none());
+	}
 }
