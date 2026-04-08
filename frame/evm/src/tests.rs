@@ -1708,7 +1708,6 @@ fn metadata_empty_dont_code_gets_cached() {
 
 mod whitelist_tests {
 	use super::*;
-	use crate::mock::*;
 
 	fn create_with_source(
 		source: H160,
