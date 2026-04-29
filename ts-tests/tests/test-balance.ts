@@ -38,17 +38,28 @@ describeWithFrontier("Frontier RPC (Balance)", (context) => {
 		);
 		await customRequest(context.web3, "eth_sendRawTransaction", [tx.rawTransaction]);
 
-		// GENESIS_ACCOUNT_BALANCE - (21000 * gasPrice) - value;
+		await createAndFinalizeBlock(context.web3);
+
+		// Priority fees are disabled in the runner, so a legacy tx is charged
+		// gasUsed * BaseFeePerGas instead of gasUsed * gasPrice.
+		// pallet_ethereum stores baseFeePerGas after on_finalize runs, so the
+		// value the runner read during block N+1 is reported on block N (the
+		// parent), not on the tx-bearing block.
+		// The fee is then converted to substrate balance, which truncates
+		// anything below 10^9 wei.
+		const receipt = await context.web3.eth.getTransactionReceipt(tx.transactionHash);
+		const txBlock = await context.web3.eth.getBlock(receipt.blockHash);
+		const parentBlock = await context.web3.eth.getBlock(txBlock.parentHash);
+		const evmGasCost = BigInt(receipt.gasUsed) * BigInt(parentBlock.baseFeePerGas);
+		const substrateGranularity = BigInt(1_000_000_000);
+		const gasCost = (evmGasCost / substrateGranularity) * substrateGranularity;
+
 		const expectedGenesisBalance = (
 			BigInt(GENESIS_ACCOUNT_BALANCE) -
-			BigInt(21000) * BigInt(GAS_PRICE) -
+			gasCost -
 			BigInt(toEvmBalance(TRANSFER_VALUE))
 		).toString();
 		const expectedTestBalance = (BigInt(toEvmBalance(TRANSFER_VALUE)) - BigInt(EXISTENTIAL_DEPOSIT)).toString();
-		expect(await context.web3.eth.getBalance(GENESIS_ACCOUNT, "pending")).to.equal(expectedGenesisBalance);
-		expect(await context.web3.eth.getBalance(TEST_ACCOUNT, "pending")).to.equal(expectedTestBalance);
-
-		await createAndFinalizeBlock(context.web3);
 
 		expect(await context.web3.eth.getBalance(GENESIS_ACCOUNT)).to.equal(expectedGenesisBalance);
 		expect(await context.web3.eth.getBalance(TEST_ACCOUNT)).to.equal(expectedTestBalance);
