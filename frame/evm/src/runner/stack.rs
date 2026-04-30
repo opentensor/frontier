@@ -77,7 +77,6 @@ where
 		value: U256,
 		gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
-		max_priority_fee_per_gas: Option<U256>,
 		config: &'config evm::Config,
 		precompiles: &'precompiles T::PrecompilesType,
 		is_transactional: bool,
@@ -105,7 +104,6 @@ where
 			value,
 			gas_limit,
 			max_fee_per_gas,
-			max_priority_fee_per_gas,
 			config,
 			precompiles,
 			is_transactional,
@@ -144,7 +142,6 @@ where
 				value,
 				gas_limit,
 				max_fee_per_gas,
-				max_priority_fee_per_gas,
 				config,
 				precompiles,
 				is_transactional,
@@ -166,7 +163,6 @@ where
 		value: U256,
 		mut gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
-		_max_priority_fee_per_gas: Option<U256>,
 		config: &'config evm::Config,
 		precompiles: &'precompiles T::PrecompilesType,
 		is_transactional: bool,
@@ -229,25 +225,13 @@ where
 			});
 		}
 
-		// OTF: Priority fees disabled to prevent MEV-based transaction ordering.
-		let max_priority_fee_per_gas = None;
-
 		let total_fee_per_gas = if is_transactional {
-			match (max_fee_per_gas, max_priority_fee_per_gas) {
+			match max_fee_per_gas {
 				// Zero max_fee_per_gas for validated transactional calls exist in XCM -> EVM
 				// because fees are already withdrawn in the xcm-executor.
-				(Some(max_fee), _) if max_fee.is_zero() => U256::zero(),
-				// With no tip, we pay exactly the base_fee
-				(Some(_), None) => base_fee,
-				// With tip, we include as much of the tip on top of base_fee that we can, never
-				// exceeding max_fee_per_gas
-				(Some(max_fee_per_gas), Some(max_priority_fee_per_gas)) => {
-					let actual_priority_fee_per_gas = max_fee_per_gas
-						.saturating_sub(base_fee)
-						.min(max_priority_fee_per_gas);
-
-					base_fee.saturating_add(actual_priority_fee_per_gas)
-				}
+				Some(max_fee) if max_fee.is_zero() => U256::zero(),
+				// Else, we pay exactly the base_fee
+				Some(_) => base_fee,
 				_ => {
 					return Err(RunnerError {
 						error: Error::<T>::GasPriceTooLow,
@@ -579,7 +563,6 @@ where
 			value,
 			gas_limit,
 			max_fee_per_gas,
-			max_priority_fee_per_gas,
 			config,
 			&precompiles,
 			is_transactional,
@@ -659,7 +642,6 @@ where
 			value,
 			gas_limit,
 			max_fee_per_gas,
-			max_priority_fee_per_gas,
 			config,
 			&precompiles,
 			is_transactional,
@@ -743,7 +725,6 @@ where
 			value,
 			gas_limit,
 			max_fee_per_gas,
-			max_priority_fee_per_gas,
 			config,
 			&precompiles,
 			is_transactional,
@@ -1491,7 +1472,6 @@ mod tests {
 				U256::default(),
 				100_000,
 				None,
-				None,
 				&config,
 				&MockPrecompileSet,
 				false,
@@ -1504,7 +1484,6 @@ mod tests {
 						H160::default(),
 						U256::default(),
 						100_000,
-						None,
 						None,
 						&config,
 						&MockPrecompileSet,
@@ -1538,7 +1517,6 @@ mod tests {
 				H160::default(),
 				U256::default(),
 				100_000,
-				None,
 				None,
 				&config,
 				&MockPrecompileSet,
