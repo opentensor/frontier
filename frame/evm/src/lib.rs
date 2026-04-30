@@ -1405,7 +1405,7 @@ pub struct SubstrateBalance(U256);
 
 impl SubstrateBalance {
 	pub fn new(value: U256) -> Self {
-		SubstrateBalance(value)
+		Self(value)
 	}
 
 	pub fn into_u256(self) -> U256 {
@@ -1423,13 +1423,13 @@ impl SubstrateBalance {
 
 impl From<u64> for SubstrateBalance {
 	fn from(value: u64) -> Self {
-		SubstrateBalance(U256::from(value))
+		Self(U256::from(value))
 	}
 }
 
 impl From<u128> for SubstrateBalance {
 	fn from(value: u128) -> Self {
-		SubstrateBalance(U256::from(value))
+		Self(U256::from(value))
 	}
 }
 
@@ -1444,7 +1444,7 @@ pub struct EvmBalance(U256);
 
 impl EvmBalance {
 	pub fn new(value: U256) -> Self {
-		EvmBalance(value)
+		Self(value)
 	}
 
 	pub fn into_u256(self) -> U256 {
@@ -1462,13 +1462,13 @@ impl EvmBalance {
 
 impl From<u64> for EvmBalance {
 	fn from(value: u64) -> Self {
-		EvmBalance(U256::from(value))
+		Self(U256::from(value))
 	}
 }
 
 impl From<u128> for EvmBalance {
 	fn from(value: u128) -> Self {
-		EvmBalance(U256::from(value))
+		Self(U256::from(value))
 	}
 }
 
