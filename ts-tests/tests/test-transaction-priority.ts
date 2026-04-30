@@ -25,7 +25,10 @@ describeWithFrontier("Frontier RPC (Priority)", (context) => {
 		return tx;
 	}
 
-	step("should prioritize transaction with the higher gasPrice", async function () {
+	// Every EVM transaction is given a uniform pool priority, so the txpool
+	// does not replace a tx with a higher-gasPrice tx of the same nonce.
+	// The first arrival wins regardless of gasPrice.
+	step("uniform priority: first transaction with a given nonce wins", async function () {
 		this.timeout(15000);
 		const gasPrices = [
 			"0x3B9ACA01",
@@ -44,6 +47,6 @@ describeWithFrontier("Frontier RPC (Priority)", (context) => {
 		await createAndFinalizeBlock(context.web3);
 		const block = await context.web3.eth.getBlock("latest", true);
 		expect(block.transactions.length).to.be.eq(1);
-		expect(block.transactions[0].gasPrice).to.be.eq("1000000007");
+		expect(block.transactions[0].gasPrice).to.be.eq("1000000001");
 	});
 });

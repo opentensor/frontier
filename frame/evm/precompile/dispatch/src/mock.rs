@@ -162,6 +162,7 @@ impl pallet_evm::Config for Test {
 	type CreateInnerOriginFilter = ();
 	type CreateOriginFilter = ();
 	type WeightInfo = ();
+	type BalanceConverter = ();
 }
 
 pub(crate) struct MockHandle {

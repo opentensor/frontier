@@ -54,8 +54,10 @@ use fp_evm::weight_per_gas;
 use fp_rpc::TransactionStatus;
 use pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction};
 use pallet_evm::{
-	Account as EVMAccount, EnsureAccountId20, FeeCalculator, IdentityAddressMapping, Runner,
+	Account as EVMAccount, BalanceConverter, EnsureAccountId20, EvmBalance, FeeCalculator,
+	IdentityAddressMapping, Runner, SubstrateBalance,
 };
+use stp_shield::ShieldedTransaction;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_system::Call as SystemCall;
@@ -357,6 +359,41 @@ parameter_types! {
 	pub WeightPerGas: Weight = Weight::from_parts(weight_per_gas(BLOCK_GAS_LIMIT, NORMAL_DISPATCH_RATIO, WEIGHT_MILLISECS_PER_BLOCK), 0);
 }
 
+const EVM_DECIMALS_FACTOR: u64 = 1_000_000_000_u64;
+pub struct SubtensorEvmBalanceConverter;
+
+impl BalanceConverter for SubtensorEvmBalanceConverter {
+	/// Convert from Substrate balance (u64) to EVM balance (U256)
+	fn into_evm_balance(value: SubstrateBalance) -> Option<EvmBalance> {
+		value
+			.into_u256()
+			.checked_mul(U256::from(EVM_DECIMALS_FACTOR))
+			.and_then(|evm_value| {
+				// Ensure the result fits within the maximum U256 value
+				if evm_value <= U256::MAX {
+					Some(EvmBalance::new(evm_value))
+				} else {
+					None
+				}
+			})
+	}
+
+	/// Convert from EVM balance (U256) to Substrate balance (u64)
+	fn into_substrate_balance(value: EvmBalance) -> Option<SubstrateBalance> {
+		value
+			.into_u256()
+			.checked_div(U256::from(EVM_DECIMALS_FACTOR))
+			.and_then(|substrate_value| {
+				// Ensure the result fits within the TAO balance type (u64)
+				if substrate_value <= U256::from(u64::MAX) {
+					Some(SubstrateBalance::new(substrate_value))
+				} else {
+					None
+				}
+			})
+	}
+}
+
 impl pallet_evm::Config for Runtime {
 	type AccountProvider = pallet_evm::FrameSystemAccountProvider<Self>;
 	type FeeCalculator = BaseFee;
@@ -381,6 +418,7 @@ impl pallet_evm::Config for Runtime {
 	type CreateOriginFilter = ();
 	type CreateInnerOriginFilter = ();
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Self>;
+	type BalanceConverter = SubtensorEvmBalanceConverter;
 }
 
 parameter_types! {
@@ -1064,6 +1102,20 @@ impl_runtime_apis! {
 			let params = (&config, &whitelist);
 			add_benchmarks!(params, batches);
 			Ok(batches)
+		}
+	}
+
+	impl stp_shield::ShieldApi<Block> for Runtime {
+		fn try_decode_shielded_tx(_uxt: <Block as BlockT>::Extrinsic) -> Option<ShieldedTransaction> {
+			None
+		}
+
+		fn is_shielded_using_current_key(_key_hash: &[u8; 16]) -> bool {
+			false
+		}
+
+		fn try_unshield_tx(_dec_key_bytes: Vec<u8>, _shielded_tx: ShieldedTransaction) -> Option<<Block as BlockT>::Extrinsic> {
+			None
 		}
 	}
 }

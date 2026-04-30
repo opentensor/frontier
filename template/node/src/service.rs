@@ -18,6 +18,8 @@ use sp_api::ConstructRuntimeApi;
 use sp_consensus_aura::sr25519::{AuthorityId as AuraId, AuthorityPair as AuraPair};
 use sp_core::{H256, U256};
 use sp_runtime::traits::{Block as BlockT, NumberFor};
+use stc_shield::{self, MemoryShieldKeystore};
+use stp_shield::ShieldKeystorePtr;
 // Runtime
 use frontier_template_runtime::{
 	opaque::Block, AccountId, Balance, Nonce, RuntimeApi, TransactionConverter,
@@ -132,6 +134,7 @@ where
 		&client,
 		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
+		None,
 	)?;
 
 	let storage_override = Arc::new(StorageOverrideHandler::<B, _, _>::new(client.clone()));
@@ -292,7 +295,8 @@ where
 	<B as BlockT>::Header: Unpin,
 	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
 	RA: Send + Sync + 'static,
-	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>,
+	RA::RuntimeApi:
+		RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance> + stp_shield::ShieldApi<B>,
 	HF: HostFunctionsT + 'static,
 	NB: sc_network::NetworkBackend<B, <B as BlockT>::Hash>,
 {
@@ -351,7 +355,7 @@ where
 			Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
 				backend.clone(),
 				grandpa_link.shared_authority_set().clone(),
-				Vec::new(),
+				sc_consensus_grandpa::warp_proof::HardForks::new_initial_set_id(0),
 			));
 		Some(WarpSyncConfig::WithProvider(warp_sync))
 	};
@@ -438,18 +442,24 @@ where
 			prometheus_registry.clone(),
 		));
 
+		let shield_keystore = Arc::new(MemoryShieldKeystore::new());
 		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 		let target_gas_price = eth_config.target_gas_price;
-		let pending_create_inherent_data_providers = move |_, ()| async move {
-			let current = sp_timestamp::InherentDataProvider::from_system_time();
-			let next_slot = current.timestamp().as_millis() + slot_duration.as_millis();
-			let timestamp = sp_timestamp::InherentDataProvider::new(next_slot.into());
-			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-				*timestamp,
-				slot_duration,
-			);
-			let dynamic_fee = fp_dynamic_fee::InherentDataProvider(U256::from(target_gas_price));
-			Ok((slot, timestamp, dynamic_fee))
+		let pending_create_inherent_data_providers = move |_, ()| {
+			let keystore = shield_keystore.clone();
+			async move {
+				let current = sp_timestamp::InherentDataProvider::from_system_time();
+				let next_slot = current.timestamp().as_millis() + slot_duration.as_millis();
+				let timestamp = sp_timestamp::InherentDataProvider::new(next_slot.into());
+				let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+					*timestamp,
+					slot_duration,
+				);
+				let dynamic_fee =
+					fp_dynamic_fee::InherentDataProvider(U256::from(target_gas_price));
+				let shield = stc_shield::InherentDataProvider::new(keystore.clone());
+				Ok((slot, timestamp, dynamic_fee, shield))
+			}
 		};
 
 		Box::new(move |subscription_task_executor| {
@@ -474,7 +484,8 @@ where
 				fee_history_cache_limit,
 				execute_gas_limit_multiplier,
 				forced_parent_hashes: None,
-				pending_create_inherent_data_providers,
+				pending_create_inherent_data_providers: pending_create_inherent_data_providers
+					.clone(),
 			};
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
@@ -525,7 +536,8 @@ where
 	.await;
 
 	if role.is_authority() {
-		// manual-seal authorship
+		let shield_keystore = Arc::new(MemoryShieldKeystore::new());
+
 		if let Some(sealing) = sealing {
 			run_manual_seal_authorship(
 				&eth_config,
@@ -538,6 +550,7 @@ where
 				prometheus_registry.as_ref(),
 				telemetry.as_ref(),
 				commands_stream,
+				shield_keystore.clone(),
 			)?;
 
 			log::info!("Manual Seal Ready");
@@ -550,18 +563,24 @@ where
 			transaction_pool.clone(),
 			prometheus_registry.as_ref(),
 			telemetry.as_ref().map(|x| x.handle()),
+			shield_keystore.clone(),
 		);
 
 		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 		let target_gas_price = eth_config.target_gas_price;
-		let create_inherent_data_providers = move |_, ()| async move {
-			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-				*timestamp,
-				slot_duration,
-			);
-			let dynamic_fee = fp_dynamic_fee::InherentDataProvider(U256::from(target_gas_price));
-			Ok((slot, timestamp, dynamic_fee))
+		let create_inherent_data_providers = move |_, ()| {
+			let keystore = shield_keystore.clone();
+			async move {
+				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+				let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+					*timestamp,
+					slot_duration,
+				);
+				let dynamic_fee =
+					fp_dynamic_fee::InherentDataProvider(U256::from(target_gas_price));
+				let shield = stc_shield::InherentDataProvider::new(keystore.clone());
+				Ok((slot, timestamp, dynamic_fee, shield))
+			}
 		};
 
 		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(
@@ -654,12 +673,14 @@ fn run_manual_seal_authorship<B, RA, HF>(
 	commands_stream: mpsc::Receiver<
 		sc_consensus_manual_seal::rpc::EngineCommand<<B as BlockT>::Hash>,
 	>,
+	shield_keystore: ShieldKeystorePtr,
 ) -> Result<(), ServiceError>
 where
 	B: BlockT,
 	RA: ConstructRuntimeApi<B, FullClient<B, RA, HF>>,
 	RA: Send + Sync + 'static,
-	RA::RuntimeApi: RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance>,
+	RA::RuntimeApi:
+		RuntimeApiCollection<B, AuraId, AccountId, Nonce, Balance> + stp_shield::ShieldApi<B>,
 	HF: HostFunctionsT + 'static,
 {
 	let proposer_factory = sc_basic_authorship::ProposerFactory::new(
@@ -668,6 +689,7 @@ where
 		transaction_pool.clone(),
 		prometheus_registry,
 		telemetry.as_ref().map(|x| x.handle()),
+		shield_keystore.clone(),
 	);
 
 	thread_local!(static TIMESTAMP: RefCell<u64> = const { RefCell::new(0) });

@@ -270,6 +270,7 @@ impl pallet_evm::Config for Runtime {
 	type CreateInnerOriginFilter = ();
 	type CreateOriginFilter = ();
 	type WeightInfo = pallet_evm::weights::SubstrateWeight<Runtime>;
+	type BalanceConverter = ();
 }
 
 parameter_types! {

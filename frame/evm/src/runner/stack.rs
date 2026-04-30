@@ -53,8 +53,9 @@ use fp_evm::{
 use super::meter::StorageMeter;
 use crate::{
 	runner::Runner as RunnerT, AccountCodes, AccountCodesMetadata, AccountProvider,
-	AccountStorages, AddressMapping, BalanceOf, BlockHashMapping, Config, EnsureCreateOrigin,
-	Error, Event, FeeCalculator, OnChargeEVMTransaction, OnCreate, Pallet, RunnerError,
+	AccountStorages, AddressMapping, BalanceConverter, BalanceOf, BlockHashMapping, Config,
+	EnsureCreateOrigin, Error, Event, EvmBalance, FeeCalculator, OnChargeEVMTransaction, OnCreate,
+	Pallet, RunnerError,
 };
 
 #[cfg(feature = "forbid-evm-reentrancy")]
@@ -76,7 +77,6 @@ where
 		value: U256,
 		gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
-		max_priority_fee_per_gas: Option<U256>,
 		config: &'config evm::Config,
 		precompiles: &'precompiles T::PrecompilesType,
 		is_transactional: bool,
@@ -104,7 +104,6 @@ where
 			value,
 			gas_limit,
 			max_fee_per_gas,
-			max_priority_fee_per_gas,
 			config,
 			precompiles,
 			is_transactional,
@@ -143,7 +142,6 @@ where
 				value,
 				gas_limit,
 				max_fee_per_gas,
-				max_priority_fee_per_gas,
 				config,
 				precompiles,
 				is_transactional,
@@ -165,7 +163,6 @@ where
 		value: U256,
 		mut gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
-		max_priority_fee_per_gas: Option<U256>,
 		config: &'config evm::Config,
 		precompiles: &'precompiles T::PrecompilesType,
 		is_transactional: bool,
@@ -229,21 +226,12 @@ where
 		}
 
 		let total_fee_per_gas = if is_transactional {
-			match (max_fee_per_gas, max_priority_fee_per_gas) {
+			match max_fee_per_gas {
 				// Zero max_fee_per_gas for validated transactional calls exist in XCM -> EVM
 				// because fees are already withdrawn in the xcm-executor.
-				(Some(max_fee), _) if max_fee.is_zero() => U256::zero(),
-				// With no tip, we pay exactly the base_fee
-				(Some(_), None) => base_fee,
-				// With tip, we include as much of the tip on top of base_fee that we can, never
-				// exceeding max_fee_per_gas
-				(Some(max_fee_per_gas), Some(max_priority_fee_per_gas)) => {
-					let actual_priority_fee_per_gas = max_fee_per_gas
-						.saturating_sub(base_fee)
-						.min(max_priority_fee_per_gas);
-
-					base_fee.saturating_add(actual_priority_fee_per_gas)
-				}
+				Some(max_fee) if max_fee.is_zero() => U256::zero(),
+				// Else, we pay exactly the base_fee
+				Some(_) => base_fee,
 				_ => {
 					return Err(RunnerError {
 						error: Error::<T>::GasPriceTooLow,
@@ -266,7 +254,7 @@ where
 				})?;
 
 		// Deduct fee from the `source` account. Returns `None` if `total_fee` is Zero.
-		let fee = T::OnChargeTransaction::withdraw_fee(&source, total_fee)
+		let fee = T::OnChargeTransaction::withdraw_fee(&source, EvmBalance::new(total_fee))
 			.map_err(|e| RunnerError { error: e, weight })?;
 
 		let vicinity = Vicinity {
@@ -400,9 +388,9 @@ where
 		let actual_priority_fee = T::OnChargeTransaction::correct_and_deposit_fee(
 			&source,
 			// Actual fee after evm execution, including tip.
-			actual_fee,
+			EvmBalance::new(actual_fee),
 			// Base fee.
-			actual_base_fee,
+			EvmBalance::new(actual_base_fee),
 			// Fee initially withdrawn.
 			fee,
 		);
@@ -473,6 +461,17 @@ where
 		proof_size_base_cost: Option<u64>,
 		evm_config: &evm::Config,
 	) -> Result<(), RunnerError<Self::Error>> {
+		// OTF: Whitelist check for contract creation (target = None).
+		if target.is_none() && !crate::DisableWhitelistCheck::<T>::get() {
+			let whitelist = crate::WhitelistedCreators::<T>::get();
+			if !whitelist.contains(&source) {
+				return Err(RunnerError {
+					error: Error::<T>::NotAllowed,
+					weight: Weight::zero(),
+				});
+			}
+		}
+
 		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
 		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
 		weight = weight.saturating_add(inner_weight);
@@ -564,7 +563,6 @@ where
 			value,
 			gas_limit,
 			max_fee_per_gas,
-			max_priority_fee_per_gas,
 			config,
 			&precompiles,
 			is_transactional,
@@ -644,7 +642,6 @@ where
 			value,
 			gas_limit,
 			max_fee_per_gas,
-			max_priority_fee_per_gas,
 			config,
 			&precompiles,
 			is_transactional,
@@ -728,7 +725,6 @@ where
 			value,
 			gas_limit,
 			max_fee_per_gas,
-			max_priority_fee_per_gas,
 			config,
 			&precompiles,
 			is_transactional,
@@ -1176,13 +1172,16 @@ where
 	fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
 		let source = T::AddressMapping::into_account_id(transfer.source);
 		let target = T::AddressMapping::into_account_id(transfer.target);
+
+		// Adjust decimals
+		let value_sub =
+			T::BalanceConverter::into_substrate_balance(EvmBalance::new(transfer.value))
+				.ok_or(ExitError::OutOfFund)?;
+
 		T::Currency::transfer(
 			&source,
 			&target,
-			transfer
-				.value
-				.try_into()
-				.map_err(|_| ExitError::OutOfFund)?,
+			value_sub.0.unique_saturated_into(),
 			ExistenceRequirement::AllowDeath,
 		)
 		.map_err(|_| ExitError::OutOfFund)
@@ -1473,7 +1472,6 @@ mod tests {
 				U256::default(),
 				100_000,
 				None,
-				None,
 				&config,
 				&MockPrecompileSet,
 				false,
@@ -1486,7 +1484,6 @@ mod tests {
 						H160::default(),
 						U256::default(),
 						100_000,
-						None,
 						None,
 						&config,
 						&MockPrecompileSet,
@@ -1520,7 +1517,6 @@ mod tests {
 				H160::default(),
 				U256::default(),
 				100_000,
-				None,
 				None,
 				&config,
 				&MockPrecompileSet,
