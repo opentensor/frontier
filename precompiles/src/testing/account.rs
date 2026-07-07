@@ -19,7 +19,8 @@
 use pallet_evm::AddressMapping;
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
-use sp_core::{keccak_256, Decode, DecodeWithMemTracking, Encode, MaxEncodedLen, H160, H256};
+use sp_core::{ecdsa, Decode, DecodeWithMemTracking, Encode, MaxEncodedLen, H160, H256};
+use sp_io::hashing::keccak_256;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 #[derive(Serialize, Deserialize, derive_more::Display)]
@@ -106,7 +107,7 @@ impl sp_runtime::traits::Convert<H160, MockAccount> for MockAccount {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	sp_core::RuntimeDebug,
+	Debug,
 	TypeInfo,
 	Serialize,
 	Deserialize
@@ -129,6 +130,7 @@ impl From<sp_runtime::MultiSignature> for MockSignature {
 				panic!("Sr25519 not supported for MockSignature")
 			}
 			sp_runtime::MultiSignature::Ecdsa(sig) => Self(sig),
+			sp_runtime::MultiSignature::Eth(sig) => Self(ecdsa::Signature::from(sig.0)),
 		}
 	}
 }
@@ -170,7 +172,7 @@ impl sp_runtime::traits::Verify for MockSignature {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	sp_core::RuntimeDebug,
+	Debug,
 	TypeInfo
 )]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
